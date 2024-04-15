@@ -1,0 +1,70 @@
+site_name: Cloud Design Patterns - Learning Journey
+site_author: Noe-Samaille
+repo_name: cloud-design-patterns-journey/docs
+repo_url: https://github.com/cloud-design-patterns-journey/docs
+edit_uri: edit/main/docs/
+extra_css:
+  - custom.css
+nav:
+  - Home: index.md
+  - Labs:
+    - labs/security.md
+theme:
+  name: material
+  custom_dir: material/.overrides
+  logo: images/logo.png
+  favicon: images/logo.png
+  language: en
+  font:
+    text: IBM Plex Sans
+  features:
+    - navigation.top
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    #- navigation.sections
+    #- navigation.expand
+    - navigation.prune 
+    - navigation.indexes
+    - content.action.edit
+    - content.action.view
+    - content.code.copy
+    #- navigation.header
+    #- navigation.footer
+  palette:
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: black
+      accent: light green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - scheme: default
+      primary: black
+      accent: green
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences 
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji 
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/cloud-design-patterns-journey/docs
+plugins:
+  - git-authors
+  - search

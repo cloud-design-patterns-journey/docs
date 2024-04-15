@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .md-header,
+    .md-tabs {
+        background-color: unset !important;
+    }
+
+    .md-header--shadow {
+        box-shadow: unset !important;
+    }
+
+    @media screen and (min-width: 60em) {
+        .md-sidebar--primary, .md-sidebar--secondary {
+            display: none;
+        }
+        .md-sidebar--secondary:not([hidden]) {
+            display: none;
+        }
+    }
+
+    .md-footer,
+    .md-footer-meta {
+        background-color: unset !important;
+    }
+
+    body {
+        background: url('./assets/images/bg.png') no-repeat center center fixed;
+        /* backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px); */
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
+    }
+
+    .md-content {
+        top: 6rem;
+        display: flex;
+        position: absolute;
+        transition: transform .4s cubic-bezier(.1, .7, .1, 1), opacity .25s;
+        width: 100%;
+        color: white;
+    }
+
+    .md-main__inner.md-grid h1 {
+        font-weight: 500;
+    }
+
+    .md-main__inner.md-grid h1, .md-main__inner.md-grid svg {
+        color: hsl(232deg 75% 90% / 62%);
+    }
+
+    .md-main__inner.md-grid p,
+    .md-main__inner.md-grid form.md-feedback {
+        max-width: 35rem;
+    }
+</style>
+<div class="grow"></div>
+{{ super() }}
+{% endblock %}

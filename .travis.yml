@@ -1,0 +1,22 @@
+language: python
+
+python: 3.12
+
+branches: main
+
+install:
+  - pip install mkdocs -r requirements.txt
+  - mkdocs build --verbose --clean --strict
+
+script: true
+
+deploy:
+  provider: pages
+  github_token: $GITHUB_TOKEN
+  github_url: $GITHUB_HOST
+  target_branch: gh-pages
+  skip_cleanup: true
+  local_dir: site
+  
+  on:
+    branch: main
