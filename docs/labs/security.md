@@ -1,4 +1,4 @@
-# Injecting secrets into Kubernetes pods via Vault Agent containers | Vault | HashiCorp Developer
+# Injecting secrets into Kubernetes pods via Vault Agent
 
 ~30 min
 
@@ -815,7 +815,7 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
                 postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
                 {{- end -}}
     ```
-    
+
     The patch performs an update to set the `vault.hashicorp.com/role` to the Vault Kubernetes role `offsite-app`.
     
 12.  Patch the `issues` deployment defined in `patch-issues.yaml`.

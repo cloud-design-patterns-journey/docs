@@ -2,39 +2,20 @@ name: Publish
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  publish:
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: generate site
-        uses: ./.github/actions/
-      - name: deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
-
-  release:
-    needs:
-      - publish
+  build:
+    name: Deploy docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Create release
-        id: create-release
-        uses: release-drafter/release-drafter@v5
-        with:
-          config-name: release-drafter.yaml
-          publish: true
-          prerelease: false
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Deploy
+        uses: mhausenblas/mkdocs-deploy-gh-pages@1.26
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
+
 permissions:
   contents: write
   pages: write
