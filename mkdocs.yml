@@ -8,7 +8,7 @@ extra_css:
 nav:
   - Home: index.md
   - Labs:
-    - labs/security.md
+    - Security Lab: labs/security.md
 theme:
   name: material
   custom_dir: material/.overrides
