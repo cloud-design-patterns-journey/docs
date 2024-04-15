@@ -1,4 +1,4 @@
-# Cloud Deisgn Patterns Journey
+# Cloud Design Patterns Journey
 
 Static documentation site for Cloud Deisgn Patterns learning journey.
 
