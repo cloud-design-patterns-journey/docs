@@ -111,10 +111,11 @@ The recommended way to run Vault on Kubernetes is via the [Helm chart](https://d
     EOF
     ```
 
-4.  Create a new `lab-security` namespace:
+4.  Create a new `lab-security-${INITIALS}` namespace (suffixed with your initials):
     ```sh
-    $ kubectl create namespace lab-security
-    $ kubectl config set-context --current --namespace lab-security
+    $ export INITIALS=ns # CHANGEME
+    $ kubectl create namespace lab-security-${INITIALS}
+    $ kubectl config set-context --current --namespace lab-security-${INITIALS}
     ```
 5.  Install the latest version of the Vault server running in development mode. If running on OpenShift add `-f vault-ocp.values.yaml` to use additional configuration:
     
@@ -122,9 +123,9 @@ The recommended way to run Vault on Kubernetes is via the [Helm chart](https://d
         NAME: vault
         ## ...
     
-    The Vault pod and Vault Agent Injector pod are deployed in the lab-security namespace.
+    The Vault pod and Vault Agent Injector pod are deployed in the `lab-security-${INITIALS}` namespace.
     
-6.  Display all the pods in the lab-security namespace.
+6.  Display all the pods in the `lab-security-${INITIALS}` namespace.
     
     ```sh
     $ kubectl get pods
@@ -246,19 +247,21 @@ Vault provides a [Kubernetes authentication](https://developer.hashicorp.com/vau
     
 5.  Create a Kubernetes authentication role named `internal-app`.
     
-        $ vault write auth/kubernetes/role/internal-app \
-              bound_service_account_names=internal-app \
-              bound_service_account_namespaces=lab-security \
-              policies=internal-app \
-              ttl=24h
-        
+    ```sh
+    $ export INITIALS=ns # changeme
+    $ vault write auth/kubernetes/role/internal-app \
+            bound_service_account_names=internal-app \
+            bound_service_account_namespaces=lab-security-${INITIALS} \
+            policies=internal-app \
+            ttl=24h
+    ```
     
     Successful output from the command resembles this example:
     
         Success! Data written to: auth/kubernetes/role/internal-app
         
     
-    The role connects the Kubernetes service account, `internal-app`, and namespace, `lab-security`, with the Vault policy, `internal-app`. The tokens returned after authentication are valid for 24 hours.
+    The role connects the Kubernetes service account, `internal-app`, and namespace, `lab-security-${INITIALS}`, with the Vault policy, `internal-app`. The tokens returned after authentication are valid for 24 hours.
     
 6.  Lastly, exit the `vault-0` pod.
     
@@ -267,16 +270,16 @@ The Vault Kubernetes authentication role defined a Kubernetes service account na
 
 A service account provides an identity for processes that run in a Pod. With this identity we will be able to run the application within the cluster.
 
-1.  Get all the service accounts in the lab-security namespace.
+1.  Get all the service accounts in the lab-security-${INITIALS} namespace.
     
         $ kubectl get serviceaccounts
         NAME                   SECRETS   AGE
-        lab-security                1         43m
+        lab-security-ns                1         43m
         vault                  1         34m
         vault-agent-injector   1         34m
         
     
-2.  Create a Kubernetes service account named `internal-app` in the lab-security namespace.
+2.  Create a Kubernetes service account named `internal-app` in the `lab-security-${INITIALS}` namespace.
     
         $ kubectl create sa internal-app
         
@@ -285,7 +288,7 @@ A service account provides an identity for processes that run in a Pod. With thi
     
         $ kubectl get serviceaccounts
         NAME                   SECRETS   AGE
-        lab-security                1         52m
+        lab-security-ns        1         52m
         internal-app           1         13s
         vault                  1         43m
         vault-agent-injector   1         43m
@@ -332,7 +335,7 @@ You have created a sample application, published it to DockerHub, and created a 
         deployment.apps/orgchart created
         
     
-3.  Get all the pods in the lab-security namespace and note down the name of the pod with a name prefixed with "orgchart-".
+3.  Get all the pods in the `lab-security-${INITIALS}` namespace and note down the name of the pod with a name prefixed with "orgchart-".
     
         $ kubectl get pods
         NAME                                    READY   STATUS    RESTARTS   AGE
@@ -367,7 +370,7 @@ You have created a sample application, published it to DockerHub, and created a 
         
     
 
-The deployment is running the pod with the `internal-app` Kubernetes service account in the lab-security namespace. The Vault Agent Injector only modifies a deployment if it contains a specific set of annotations. An existing deployment may have its definition patched to include the necessary annotations.
+The deployment is running the pod with the `internal-app` Kubernetes service account in the `lab-security-${INITIALS}` namespace. The Vault Agent Injector only modifies a deployment if it contains a specific set of annotations. An existing deployment may have its definition patched to include the necessary annotations.
 
 1.  Display the deployment patch `patch-inject-secrets.yaml`.
     
@@ -398,7 +401,7 @@ The deployment is running the pod with the `internal-app` Kubernetes service acc
     
     A new `orgchart` pod starts alongside the existing pod. When it is ready the original terminates and removes itself from the list of active pods.
     
-3.  Get all the pods in the lab-security namespace.
+3.  Get all the pods in the `lab-security-${INITIALS}` namespace.
     
         $ kubectl get pods
         NAME                                    READY   STATUS     RESTARTS   AGE
@@ -471,7 +474,7 @@ The structure of the injected secrets may need to be structured in a way for an 
         deployment.apps/exampleapp patched
         
     
-3.  Get all the pods in the lab-security namespace.
+3.  Get all the pods in the `lab-security-${INITIALS}` namespace.
     
         $ kubectl get pods
         NAME                                    READY   STATUS    RESTARTS   AGE
@@ -526,7 +529,7 @@ The annotations may patch these secrets into any deployment. Pods require that t
         pod/payroll created
         
     
-3.  Get all the pods in the lab-security namespace.
+3.  Get all the pods in the `lab-security-${INITIALS}` namespace.
     
         $ kubectl get pods
         NAME                                    READY   STATUS    RESTARTS   AGE
@@ -601,7 +604,7 @@ Pods run with a Kubernetes service account other than the ones defined in the Va
         serviceaccount/website created
         
     
-3.  Get all the pods in the lab-security namespace.
+3.  Get all the pods in the `lab-security-${INITIALS}` namespace.
     
         $ kubectl get pods
         NAME                                    READY   STATUS     RESTARTS   AGE
@@ -627,7 +630,7 @@ Pods run with a Kubernetes service account other than the ones defined in the Va
         [INFO]  auth.handler: authenticating
         [ERROR] auth.handler: error authenticating: error="Error making API request.
         
-        URL: PUT http://vault.lab-security.svc:8200/v1/auth/kubernetes/login
+        URL: PUT http://vault.lab-security-ns.svc:8200/v1/auth/kubernetes/login
         Code: 500. Errors:
         
         * service account name not authorized" backoff=1.562132589
@@ -650,7 +653,7 @@ Pods run with a Kubernetes service account other than the ones defined in the Va
         $ kubectl patch deployment website --patch "$(cat patch-website.yaml)"
         
     
-7.  Get all the pods in the lab-security namespace.
+7.  Get all the pods in the `lab-security-${INITIALS}` namespace.
     
         $ kubectl get pods
         NAME                                    READY   STATUS     RESTARTS   AGE
@@ -679,19 +682,19 @@ Pods run with a Kubernetes service account other than the ones defined in the Va
 
 Pods run in a namespace other than the ones defined in the Vault Kubernetes authentication role are **NOT** able to access the secrets defined at that path.
 
-1.  Create the `offsite` namespace.
+1.  Create the `lab-security-offsite-${INITIALS}` namespace.
     
-        $ kubectl create namespace offsite
-        namespace/offsite created
+        $ kubectl create namespace lab-security-offsite-${INITIALS}
+        namespace/lab-security-offsite-ns created
         
     
-2.  Set the current context to the offsite namespace.
+2.  Set the current context to the `lab-security-offsite-${INITIALS}` namespace.
     
-        $ kubectl config set-context --current --namespace offsite
+        $ kubectl config set-context --current --namespace lab-security-offsite-${INITIALS}
         Context "..." modified.
         
     
-3.  Create a Kubernetes service account named `internal-app` in the offsite namespace.
+3.  Create a Kubernetes service account named `internal-app` in the `lab-security-offsite-${INITIALS}` namespace.
     
         $ kubectl create sa internal-app
         serviceaccount/internal-app created
@@ -738,7 +741,7 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
         deployment.apps/issues created
         
     
-6.  Get all the pods in the offsite namespace.
+6.  Get all the pods in the `lab-security-offsite-${INITIALS}` namespace.
     
         $ kubectl get pods
         NAME                      READY   STATUS     RESTARTS   AGE
@@ -764,18 +767,18 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
         [INFO]  auth.handler: authenticating
         [ERROR] auth.handler: error authenticating: error="Error making API request.
         
-        URL: PUT http://vault.lab-security.svc:8200/v1/auth/kubernetes/login
+        URL: PUT http://vault.lab-security-${INITIALS}.svc:8200/v1/auth/kubernetes/login
         Code: 500. Errors:
         
         * namespace not authorized" backoff=1.9882590740000001
         
     
-    The namespace, `offsite` is not assigned to any Vault Kubernetes authentication role. This failure to authenticate causes the deployment to fail initialization.
+    The namespace, `lab-security-offsite-${INITIALS}` is not assigned to any Vault Kubernetes authentication role. This failure to authenticate causes the deployment to fail initialization.
     
-8.  Start an interactive shell session on the `vault-0` pod in the lab-security namespace.
+8.  Start an interactive shell session on the `vault-0` pod in the `lab-security-${INITIALS}` namespace.
     
     ```
-    $ kubectl exec --namespace lab-security -it vault-0 -- /bin/sh
+    $ kubectl exec --namespace `lab-security-${INITIALS}` -it vault-0 -- /bin/sh
     / $
     ```
     
@@ -784,9 +787,10 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
 9.  Create a Kubernetes authentication role named `offsite-app`.
     
     ```sh
+    $ export INITIALS=ns # CHANGEME
     $ vault write auth/kubernetes/role/offsite-app \
         bound_service_account_names=internal-app \
-        bound_service_account_namespaces=offsite \
+        bound_service_account_namespaces=lab-security-offsite-${INITIALS} \
         policies=internal-app \
         ttl=24h
     ```
@@ -827,7 +831,7 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
 
     A new `issues` pod starts alongside the existing pod. When it is ready the original terminates and removes itself from the list of active pods.
     
-13.  Get all the pods in the offsite namespace.
+13.  Get all the pods in the `lab-security-offsite-${INITIALS}` namespace.
     
     ```sh
     $ kubectl get pods
