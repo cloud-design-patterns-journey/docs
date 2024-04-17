@@ -25,12 +25,14 @@ This tutorial requires:
 
 *   [Docker](https://www.docker.com/products/docker-desktop/)
 *   [Kubernetes command-line interface (CLI)](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+    *   **Note**: if running on OpenShift, `oc` CLI can be used, it can be installed through the help section of your OpenShift console.
 *   [Helm CLI](https://helm.sh/docs/intro/install/)
-*   [Kubernetes/OpenShift cluster](https://minikube.sigs.k8s.io/docs/start/)
+*   Kubernetes/OpenShift cluster accessible.
+    *   **Note**: you can run this lab locally using [Minikube](https://minikube.sigs.k8s.io/docs/start).
 
 #### [](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#install-kubectl-and-helm-clis)Install kubectl and helm CLIs
 
-Install `kubectl` with [Homebrew](https://brew.sh/).
+Install `kubectl` with [Homebrew](https://brew.sh/) (Linux/Macos).
 
     $ brew install kubernetes-cli
     
