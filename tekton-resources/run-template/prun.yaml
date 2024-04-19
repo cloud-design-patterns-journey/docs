@@ -1,0 +1,38 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: general-
+spec:
+  serviceAccountName: pipeline
+  pipelineRef:
+    name: general
+  params:
+    - name: git-repository
+      value: CHANGE_ME
+    - name: app-name
+      value: CHANGE_ME
+    - name: img-registry
+      value: CHANGE_ME
+    - name: build-tls-verify
+      value: "true" # set to false if using insecure image registry
+    - name: img-scan-args
+      value:
+        - "image"
+        - "--exit-code"
+        - "1"
+        - "--ignore-unfixed"
+        - "--severity"
+        - "HIGH,CRITICAL"
+        # - "--insecure" # uncomment if using insecure image registry
+  workspaces:
+    - name: shared-data
+      persistentVolumeClaim:
+        claimName: general-pipeline
+    - name: sonar-credentials
+      secret:
+        secretName: sonar-credentials
+    - name: registry-config
+      secret:
+        secretName: registry-config
+    - name: manifest-dir
+      emptyDir: {}
