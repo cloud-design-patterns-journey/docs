@@ -13,7 +13,7 @@ The Inventory solution will use [GraphQL](https://graphql.org/) for its BFF laye
 ## Setup
 
 !!! note
-    This step suppose you have already deployed and configured the backend service from the previous step. Your OpenShift cluster should have the `inventory-${INITIALS}-dev` project (with `${INITIALS}` as your actual initials), configured with `ci-config` and `registry-config` secrets during previous lab.
+     Following this section means you have already deployed and configured the backend service from the previous step. Your OpenShift cluster should have the `inventory-${INITIALS}-dev` project (with `${INITIALS}` as your actual initials), that has been configured with `ci-config` and `registry-config` secrets during previous lab.
 
 ### Create your OpenShift project, Git Repository and CI pipeline
 

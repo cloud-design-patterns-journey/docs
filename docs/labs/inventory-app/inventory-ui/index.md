@@ -1,30 +1,23 @@
-**Develop and deploy the UI component of the inventory application**
-
 <!--- cSpell:ignore ICPA openshiftconsole Theia userid toolset crwexposeservice gradlew bluemix ocinstall Mico crwopenlink crwopenapp swaggerui gitpat gituser  buildconfig yourproject wireframe devenvsetup viewapp crwopenlink  atemplatized rtifactoryurlsetup Kata Koda configmap Katacoda checksetup cndp katacoda checksetup Linespace igccli regcred REPLACEME Tavis pipelinerun openshiftcluster invokecloudshell cloudnative sampleapp bwoolf hotspots multicloud pipelinerun Sricharan taskrun Vadapalli Rossel REPLACEME cloudnativesampleapp artifactoryuntar untar Hotspot devtoolsservices Piyum Zonooz Farr Kamal Arora Laszewski  Roadmap roadmap Istio Packt buildpacks automatable ksonnet jsonnet targetport podsiks SIGTERM SIGKILL minikube apiserver multitenant kubelet multizone Burstable checksetup handson  stockbffnode codepatterns devenvsetup newwindow preconfigured cloudantcredentials apikey Indexyaml classname  errorcondition tektonpipeline gradlew gitsecret viewapp cloudantgitpodscreen crwopenlink cdply crwopenapp desktoplaptop -->
+
+# Develop and deploy the UI component of the inventory application
 
 ## Setup
 
-### Create your OpenShift project and register the pipeline
+!!! note
+    Following this section means you have already deployed and configured the backend and BFF services from the previous steps. Your OpenShift cluster should have the `inventory-${INITIALS}-dev` project (with `${INITIALS}` as your actual initials), that has been configured with `ci-config` and `registry-config` secrets during previous lab.
 
-- Create a new repository from the [Carbon React template](https://github.com/IBM/template-carbon-react/generate) into your Git org.
+### Create your OpenShift project, Git Repository and CI pipeline
 
+- Create a new repository from the [Carbon React template](https://github.com/cloud-design-patterns-journey/template-carbon-react).
 
     !!! warning
-        If you are developing on a shared education cluster, place the repository in the **Git Organization** listed in your notification email and remember to add your initials as a suffix to the app name.
-        - In order to prevent naming collisions, name the repository `inv-ui-{your initials}` replacing `{your initials}` with your actual initials.
+        In order to prevent naming collisions if you are running this as part of a workshop, chose the GitHub organization you have been invited to as `Owner` and name the repository `inv-ui-${INITIALS}`, replacing `${INITIALS}` with your actual initials.
 
-- Deploy this application with Tekton pipelines :
+- Deploy this application with Tekton:
 
-=== "Using OpenShift web terminal"
-    - In the OpenShift web console, head up to **Topology** menu on the left on the **Developer** perspective and click **Create a new project**.
-
-    - Give a name to your project, call it `dev-{your initials}`, the other fields are optional.
-
-    - Initialize a web terminal using the `>_` button on the top bar next to your name on the cluster. You should have a terminal with all the necessary development tools.
-
-=== "Using your local terminal"
     !!! note
-        You should have the `oc` and `igc` command line tools installed. If not, refer to the [developers tools setup page](/getting-started/devenvsetup/#tools-installation-on-desktoplaptop).
+        You should have the [`tkn`](https://github.com/tektoncd/cli?tab=readme-ov-file#installing-tkn), [`tkn pac`](https://pipelinesascode.com/docs/guide/cli/#install) and `oc` CLIs installed. `oc` can be installed through the help section of your OpenShift console.
     
     - In the OpenShift web console, click on email address top right, click on **Copy login command** and get the OpenShift login command, which includes a token.
     
@@ -32,28 +25,51 @@
     
     - Click on **Display Token**, copy the Login with the token. oc login command will log you in. Run the login command in your terminal:
     
-      ```bash
-      $ oc login --token=qvARHflZDlOYfjJZRJUEs53Yfy4F8aa6_L3ezoagQFM --server=https://c103-e.us-south.containers.cloud.ibm.com:30979
-      Logged into "https://c103-e.us-south.containers.cloud.ibm.com:30979" as "IAM#email@company" using the token provided.
+      ```sh
+      oc login --token=<OCP_TOKEN> --server=<OCP_SERVER>
+      ```
     
-      You have access to 71 projects, the list has been suppressed. You can list all projects with 'oc projects'
+    - Move to your `inventory-${INITIALS}-dev` project created in previous lab:
+    
+      ```sh
+      export INITIALS=ns # CHANGEME
+      oc project inventory-${INITIALS}-dev
       ```
 
-- Run the following command to setup your project:
+    - Clone the repo locally:
 
-  ```
-  oc sync dev-{your initials} 
-  ```
+      ```sh
+      git clone https://github.com/cloud-design-patterns-journey/inv-ui-${INITIALS}.git
+      cd inv-ui-${INITIALS}
+      ```
 
-- [Register the pipeline](/developer-intermediate/deploy-app#5-register-the-application-in-a-openshift-pipeline), give git credentials if prompted, and **main** as the git branch to use. When prompted for the pipeline, select `ibm-nodejs`.
+    - Create the tekton pipeline for the backend service your new project:
 
-  ```
-  oc pipeline --tekton https://github.com/cnw-team-{team}/inv-ui-{your initials}
-  ```
+      ```sh
+      oc adm policy add-scc-to-user privileged -z pipeline
+      tkn pac create repository
+      ```
 
-- [Open the pipeline](/developer-intermediate/deploy-app/#5-register-the-application-in-a-openshift-pipeline) to see it running
+    !!! note
+        - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/install/overview/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
+        - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${INITIALS}-dev` project/namespace.
 
-- When the pipeline is completed, run `oc endpoints -n dev-{your initials}`. You should see an entry for the app we just pushed. Select the entry and hit `Enter` to launch the browser.
+    - In OpenShift console (**Pipelines Section > Pipelines > Repositories**), edit the newly created `Repository` YAML to add cluster specific configuration (e.g. image repository):
+
+      ```yaml
+      ...
+      spec:
+        params:
+          - name: img-server
+            secret_ref:
+              name: ci-config
+              key: img-server
+          - name: img-namespace
+            secret_ref:
+              name: ci-config
+              key: img-namespace
+      ...
+      ```
 
 ### Choose your development environment
 
@@ -67,18 +83,11 @@
     - Back to [gitpod.io](https://gitpod.io/workspaces), navigate to workspaces and click **New Workspace** to create a new workspace, give it your newly created repository URL.
 
     - If it is your first gitpod workspace, it will ask you for your preferred editor, pick the in browser Visual Studio Code, and the workspace will be created automatically for you.
-    
-    You are now ready to modify the application!
 
 === "Locally"
     Clone the project and open it using your favorite text editor or IDE (Visual Studio Code, Atom...).
-
-    ```sh
-
-    git clone https://github.com/cnw-team-{team}/inv-ui-{your initials}.git
-    cd inv-ui-{your initials}
-    code .
-    ```
+    
+You are now ready to modify the application!
 
 ### Create the initial components
 
@@ -216,7 +225,7 @@ Based on the requirements of this first use case, we will create a `StockItemLis
     git push
     ```
 
-- On the openshift console, open the [pipeline to see it running](/developer-intermediate/deploy-app/#6-view-your-application-pipeline).
+- CI pipeline should be kicked off, you can test the hosted application once complete.
 
 ### Add a service component to get mock Stock Items
 
@@ -385,7 +394,7 @@ Now that we've created the initial components, we can start to customize the `St
     git push
     ```
 
-- On the openshift console, open the [pipeline to see it running](/developer-intermediate/deploy-app/#6-view-your-application-pipeline).
+- CI pipeline should be kicked off, you can test the hosted application once complete.
 
 ### Add a service that calls the BFF
 
@@ -510,28 +519,6 @@ Now that we have a mock service that injects data, we can build an implementatio
 - Open the application to check that your app is now retrieving data from BFF GraphQL endpoint:
     ![GraphQL data view](../../../images/inventory-ui/ui-graphql-data.png)
 
-- Modify `connectsTo` property to the `values.yaml` file of the Helm chart. The value of the property should match the Kubernetes service of the microservice. (For template projects, the service name is the same as the name of the application which is that same as the name of the repository):
-    ```yaml title="chart/base/values.yaml"
-    ...
-    connectsTo: inv-bff-{your initials}
-    ...
-    ```
-
-- Add a new environment variable named `API_HOST` to the list of existing environment variables in deployment.yaml. The value of this environment variable should come from the `connectsTo` value we defined. You can add `| quote` to wrap the value in quotes in case the value is not formatted correctly:
-    ```yaml title="chart/base/templates/deployment.yaml"
-    ...
-    env:
-      - name: INGRESS_HOST
-        value: ""
-      - name: PROTOCOLS
-        value: ""
-      - name: LOG_LEVEL
-        value: {{ .Values.logLevel | quote }}
-      - name: API_HOST
-        value: {{ printf "%s:80" .Values.connectsTo | quote }}
-    ...
-    ```
-
 - Push the changes we've made to the repository:
     ```bash
     git add .
@@ -539,7 +526,7 @@ Now that we have a mock service that injects data, we can build an implementatio
     git push
     ```
 
-- On the openshift console, open the [pipeline to see it running](/developer-intermediate/deploy-app/#6-view-your-application-pipeline).
+- CI pipeline should be kicked off, you can test the hosted application once complete.
 
 ## Summary
 
