@@ -116,10 +116,10 @@
     - If it is your first gitpod workspace, it will ask you for your preferred editor, pick the in-browser Visual Studio Code, and the workspace will be created automatically for you.
     - Pick Visual Studio Code on the browser as an editor. After waiting some time, you should have an editor on your browser with the code on it. Gitpod will automatically run the application at first launch
 
-    You are now ready to modify the application!
-
 === "Locally"
     Navigate to your cloned repository and open it using your favorite text editor or IDE (Visual Studio Code, IntelliJ...).
+
+You are now ready to modify the application!
 
 Spring Boot uses annotations to configure the various components that will be injected into and
 used by the applications. A class with the `@SpringBootApplication` annotation is the starting

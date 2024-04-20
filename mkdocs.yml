@@ -12,7 +12,7 @@ nav:
       - Inventory App:
           - Introduction: labs/inventory-app/inventory-application/index.md
           - Service: labs/inventory-app/inventory-service/index.md
-          # - BFF: labs/inventory-app/inventory-bff/index.md
+          - BFF: labs/inventory-app/inventory-bff/index.md
           # - UI: labs/inventory-app/inventory-ui/index.md
           # - Optional - MongoDB: labs/inventory-app/inventory-mongodb/index.md
           # - Optional - Auth with AppID: labs/inventory-app/inventory-appid/index.md

@@ -1,5 +1,6 @@
 <!--- cSpell:ignore templatized ICPA openshiftconsole Theia userid toolset crwexposeservice gradlew bluemix ocinstall Mico crwopenlink crwopenapp swaggerui gitpat gituser  buildconfig yourproject wireframe devenvsetup viewapp crwopenlink  atemplatized rtifactoryurlsetup Kata Koda configmap Katacoda checksetup cndp katacoda checksetup Linespace igccli regcred REPLACEME Tavis pipelinerun openshiftcluster invokecloudshell cloudnative sampleapp bwoolf hotspots multicloud pipelinerun Sricharan taskrun Vadapalli Rossel REPLACEME cloudnativesampleapp artifactoryuntar untar Hotspot devtoolsservices Piyum Zonooz Farr Kamal Arora Laszewski  Roadmap roadmap Istio Packt buildpacks automatable ksonnet jsonnet targetport podsiks SIGTERM SIGKILL minikube apiserver multitenant kubelet multizone Burstable checksetup handson  stockbffnode codepatterns devenvsetup newwindow preconfigured cloudantcredentials apikey Indexyaml classname  errorcondition tektonpipeline gradlew gitsecret viewapp cloudantgitpodscreen crwopenlink cdply crwopenapp desktoplaptop -->
-**Develop and deploy the BFF component of the inventory application**
+
+# Develop and deploy the BFF component of the inventory application
 
 The Inventory BFF's role in the architecture is to act as an orchestrator between the core business services and the specific digital channel it is focused on supporting. This class article will give you more detail about the [Backend For Frontend architectural pattern](https://samnewman.io/patterns/architectural/bff/) and the benefits.
 
@@ -11,53 +12,72 @@ The Inventory solution will use [GraphQL](https://graphql.org/) for its BFF laye
 
 ## Setup
 
-### Create your OpenShift project and register the pipeline
+!!! note
+    This step suppose you have already deployed and configured the backend service from the previous step. Your OpenShift cluster should have the `inventory-${INITIALS}-dev` project (with `${INITIALS}` as your actual initials), configured with `ci-config` and `registry-config` secrets during previous lab.
 
-- Create a new repository from the [Typescript GraphQL template](https://github.com/IBM/template-graphql-typescript/generate).
+### Create your OpenShift project, Git Repository and CI pipeline
+
+- Create a new repository from the [Typescript GraphQL template](https://github.com/cloud-design-patterns-journey/template-graphql-typescript/generate).
 
     !!! warning
-        If you are developing on a shared education cluster, place the repository in the **Git Organization** listed in your notification email and remember to add your initials as a suffix to the app name.
-        - In order to prevent naming collisions, name the repository `inv-bff-{your initials}` replacing `{your initials}` with your actual initials.
+        In order to prevent naming collisions if you are running this as part of a workshop, chose the GitHub organization you have been invited to as `Owner` and name the repository `inv-bff-${INITIALS}`, replacing `${INITIALS}` with your actual initials.
 
-- Deploy this application with Tekton pipelines :
+- Deploy this application with Tekton:
 
-=== "Using OpenShift web terminal"
-    - In the OpenShift web console, head up to **Topology** menu on the left on the **Developer** perspective and click **Create a new project**.
-
-    - Give a name to your project, call it `dev-{your initials}`, the other fields are optional.
-
-    - Initialize a web terminal using the `>_` button on the top bar next to your name on the cluster. You should have a terminal with all the necessary development tools.
-
-=== "Using your local terminal"
     !!! note
-        You should have the `oc` and `igc` command line tools installed. If not, refer to the [developers tools setup page](/getting-started/devenvsetup/#tools-installation-on-desktoplaptop).
+        You should have the [`tkn`](https://github.com/tektoncd/cli?tab=readme-ov-file#installing-tkn), [`tkn pac`](https://pipelinesascode.com/docs/guide/cli/#install) and `oc` CLIs installed. `oc` can be installed through the help section of your OpenShift console.
     
     - In the OpenShift web console, click on email address top right, click on **Copy login command** and get the OpenShift login command, which includes a token.
-        
+    
+      ![OpenShift Login](../../../images/common/LoginCommand.png)
+    
     - Click on **Display Token**, copy the Login with the token. oc login command will log you in. Run the login command in your terminal:
     
-      ```bash
-      $ oc login --token=qvARHflZDlOYfjJZRJUEs53Yfy4F8aa6_L3ezoagQFM --server=https://c103-e.us-south.containers.cloud.ibm.com:30979
-      Logged into "https://c103-e.us-south.containers.cloud.ibm.com:30979" as "IAM#email@company" using the token provided.
+      ```sh
+      oc login --token=<OCP_TOKEN> --server=<OCP_SERVER>
+      ```
     
-      You have access to 71 projects, the list has been suppressed. You can list all projects with 'oc projects'
+    - Move to your `inventory-${INITIALS}-dev` project created in previous lab:
+    
+      ```sh
+      export INITIALS=ns # CHANGEME
+      oc project inventory-${INITIALS}-dev
       ```
 
-- Run the following command to setup your project:
+    - Clone the repo locally:
 
-  ```
-  oc sync dev-{your initials} 
-  ```
+      ```sh
+      git clone https://github.com/cloud-design-patterns-journey/inv-bff-${INITIALS}.git
+      cd inv-bff-${INITIALS}
+      ```
 
-- [Register the pipeline](/developer-intermediate/deploy-app#5-register-the-application-in-a-openshift-pipeline), give git credentials if prompted, and `main` as the git branch to use. When prompted for the pipeline, select `ibm-nodejs`. 
+    - Create the tekton pipeline for the backend service your new project:
 
-  ```
-  oc pipeline --tekton https://github.com/cnw-team-{team}/inv-bff-{your initials}
-  ```
+      ```sh
+      oc adm policy add-scc-to-user privileged -z pipeline
+      tkn pac create repository
+      ```
 
-- [Open the pipeline](/developer-intermediate/deploy-app/#5-register-the-application-in-a-openshift-pipeline) to see it running
+    !!! note
+        - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/install/overview/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
+        - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${INITIALS}-dev` project/namespace.
 
-- When the pipeline is completed, run `oc endpoints -n dev-{your initials}`. You should see an entry for the app we just pushed. Select the entry and hit `Enter` to launch the browser.
+    - In OpenShift console (**Pipelines Section > Pipelines > Repositories**), edit the newly created `Repository` YAML to add cluster specific configuration (e.g. image repository):
+
+      ```yaml
+      ...
+      spec:
+        params:
+          - name: img-server
+            secret_ref:
+              name: ci-config
+              key: img-server
+          - name: img-namespace
+            secret_ref:
+              name: ci-config
+              key: img-namespace
+      ...
+      ```
 
 ### Choose your development environment
 
@@ -71,18 +91,12 @@ The Inventory solution will use [GraphQL](https://graphql.org/) for its BFF laye
     - Back to [gitpod.io](https://gitpod.io/workspaces), navigate to workspaces and click **New Workspace** to create a new workspace, give it your newly created repository URL.
 
     - If it is your first gitpod workspace, it will ask you for your preferred editor, pick the in browser Visual Studio Code, and the workspace will be created automatically for you.
-    
-    You are now ready to modify the application!
 
 === "Locally"
     Clone the project and open it using your favorite text editor or IDE (Visual Studio Code, Atom...).
+    
+You are now ready to modify the application!
 
-    ```sh
-
-    git clone https://github.com/cnw-team-{team}/inv-bff-{your initials}.git
-    cd inv-bff-{your initials}
-    code .
-    ```
 ## Create the REST interface
 
 The controller provides the REST interface for our BFF. The template uses the `typescript-rest`
