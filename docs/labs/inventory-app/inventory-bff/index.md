@@ -4,8 +4,8 @@
 
 The Inventory BFF's role in the architecture is to act as an orchestrator between the core business services and the specific digital channel it is focused on supporting. This class article will give you more detail about the [Backend For Frontend architectural pattern](https://samnewman.io/patterns/architectural/bff/) and the benefits.
 
-| ![BFF Overview](images/bff-overview.jpeg) |
-|:--:|
+|                              ![BFF Overview](images/bff-overview.jpeg)                               |
+| :--------------------------------------------------------------------------------------------------: |
 | *Backend For Frontend pattern Overview - [source](https://samnewman.io/patterns/architectural/bff/)* |
 
 The Inventory solution will use [GraphQL](https://graphql.org/) for its BFF layer, which enables the API to be dynamically controlled from the client using API queries. Follow the steps below to get started.
@@ -111,60 +111,67 @@ Since we will be developing this microservice following the [Test Driven Develop
 
 - Create the controller test:
     ```typescript title="test/controllers/stock-items.controller.spec.ts"
-    import {Application} from 'express';
-    import request from 'supertest';
-
-    import {buildApiServer} from '../helper';
+    import * as request from 'supertest';
+    import { Test, TestingModule } from '@nestjs/testing';
+    import { INestApplication } from '@nestjs/common';
+    import { AppModule } from '../../src/app.module';
 
     describe('stock-item.controller', () => {
 
-      let app: Application;
-      beforeEach(async () => {
-        const apiServer = buildApiServer();
-
-        app = await apiServer.getApp();
-      });
-
-      test('canary verifies test infrastructure', () => {
-        expect(true).toEqual(true);
-      });
-
-      describe('given GET /stock-items', () => {
-        describe('when service is successful', () => {
-          test('then return 200 status', async () => {
-            return request(app).get('/stock-items').expect(200);
-          });
-
-          test('then should return an empty array', async () => {
-            return request(app).get('/stock-items').expect([]);
-          });
+        let app: INestApplication;
+        beforeEach(async () => {
+            const moduleFixture: TestingModule = await Test.createTestingModule({
+            imports: [AppModule],
+            }).compile();
+        
+            app = moduleFixture.createNestApplication();
+            await app.init();
         });
-      });
+
+        test('canary verifies test infrastructure', () => {
+            expect(true).toEqual(true);
+        });
+
+        describe('given GET /stock-items', () => {
+            describe('when service is successful', () => {
+                test('then return 200 status', async () => {
+                    return request(app.getHttpServer()).get('/stock-items').expect(200);
+                });
+
+                test('then should return an empty array', async () => {
+                    return request(app.getHttpServer()).get('/stock-items').expect([]);
+                });
+            });
+        });
     });
     ```
 
-- Notice that tests are now failing for the nex tests.
+- Notice that tests are failing.
 
 - Create the controller component:
     ```typescript title="src/controllers/stock-items.controller.ts"
-    import {GET, Path} from 'typescript-rest';
+    import { Controller, Get } from '@nestjs/common';
 
-    @Path('stock-items')
+    @Controller('stock-items')
     export class StockItemsController {
 
-      @GET
-      async listStockItems(): Promise<any[]> {
-        return [];
-      }
+        @Get()
+        async listStockItems(): Promise<any[]> {
+            return [];
+        }
     }
     ```
 
 - Add the controller to the controllers `index.ts`. (Using `index.ts` is a good way to manage which components are exposed
 by a component and provide a good way to load the modules that will be injected into other components):
     ```typescript title="src/controllers/index.ts"
-    export * from './hello-world.controller';
-    export * from './health.controller';
+    import { HelloWorldController } from './hello-world';
+    import { StockItemsController } from './stock-items.controller';
+
+    export * from './hello-world';
     export * from './stock-items.controller';
+
+    export const controllers = [HelloWorldController, StockItemsController];
     ```
 
 - Start the service to see it running:
@@ -185,11 +192,11 @@ by a component and provide a good way to load the modules that will be injected 
 - Push the changes we've made to the repository:
     ```bash
     git add .
-    git commit -m "Adds stock items controller"
+    git commit -s -m "Adds stock items controller"
     git push
     ```
 
-- On the openshift console, open the [pipeline to see it running](../deploy-app/#6-view-your-application-pipeline).
+- CI pipeline should be kicked off, you can test the hosted application once complete.
 
 ## Update the controller to call a service
 
@@ -201,13 +208,31 @@ into javascript and to put the business logic in a separate service component.
 
 - Add a StockItem model that contains the values needed for the UI:
     ```typescript title="src/models/stock-item.model.ts"
-    export class StockItemModel {
-      id: string;
-      name: string;
-      stock: number;
-      unitPrice: number;
-      manufacturer: string;
-      picture: string;
+    import { Field, ObjectType } from "@nestjs/graphql";
+
+    export interface StockItemModel {
+        id: string;
+        name: string;
+        stock: number;
+        unitPrice: number;
+        manufacturer: string;
+        picture: string;
+    }
+
+    @ObjectType({ description: 'stock-item' })
+    export class StockItem implements StockItemModel {
+        @Field()
+        id: string;
+        @Field()
+        name: string;
+        @Field()
+        stock: number;
+        @Field()
+        unitPrice: number;
+        @Field()
+        manufacturer: string;
+        @Field()
+        picture: string;
     }
     ```
 
@@ -218,8 +243,8 @@ into javascript and to put the business logic in a separate service component.
     ```
 
 - Define an abstract class to provide the interface for our API:
-    ```typescript title="src/services/stock-items.api.ts"
-    import { StockItemModel } from '../models';
+    ```typescript title="src/services/stock-items/stock-items.api.ts"
+    import { StockItemModel } from '../../models';
 
     export abstract class StockItemsApi {
         abstract listStockItems(): Promise<StockItemModel[]>;
@@ -228,92 +253,128 @@ into javascript and to put the business logic in a separate service component.
 
     !!! note
         **Why an abstract class and not an interface?**
-        TypeScript introduces both abstract classes and interfaces. When TypeScript gets transpiled into
-        JavaScript, abstract classes are generated as classes but interfaces disappear since there isn't an equivalent type
-        in JavaScript. As a result, they cannot be used as a binding type for the `typescript-ioc` framework. Fortunately,
-        abstract classes can be used and they have the quirky behavior in TypeScript allowing them to either be `extended`
-        like a class or `implemented` like an interface.
-
-- Add the abstract class to the `index.ts` file in the services directory. Add it to the end of other export statements, do not overwrite the file:
-    ```typescript title="src/services/index.ts"
-    ...
-    export * from './stock-items.api';
-    ...
-    ```
+        TypeScript introduces both abstract classes and interfaces. Abstract classes can be used and they have the quirky behavior in TypeScript allowing them to either be `extended` like a class or `implemented` like an interface.
 
 - Lets create an implementation that will provide mock data for now. Add a `stock-items-mock.service` to services:
-    ```typescript title="src/services/stock-items-mock.service.ts"
+    ```typescript title="src/services/stock-items/stock-items-mock.service.ts"
+    import { Injectable } from '@nestjs/common';
     import { StockItemsApi } from './stock-items.api';
-    import { StockItemModel } from '../models';
+    import { StockItemModel } from '../../models';
 
-
+    @Injectable()
     export class StockItemsMockService implements StockItemsApi {
-      async listStockItems(): Promise<StockItemModel[]> {
-        return [
-          {
+    async listStockItems(): Promise<StockItemModel[]> {
+            return [
+                {
+                    id: "1",
+                    name: "Self-sealing stem bolt",
+                    stock: 10,
+                    unitPrice: 10.5,
+                    picture: "https://via.placeholder.com/32.png",
+                    manufacturer: "Bajor Galactic"
+                },
+                {
+                    id: "2",
+                    name: "Heisenberg compensator",
+                    stock: 20,
+                    unitPrice: 20.0,
+                    picture: "https://via.placeholder.com/32.png",
+                    manufacturer: "Federation Imports"
+                },
+                {
+                    id: "3",
+                    name: "Tooth sharpener",
+                    stock: 30,
+                    unitPrice: 5.25,
+                    picture: "https://via.placeholder.com/32.png",
+                    manufacturer: "Farenginar Exploits"
+                }
+            ];
+        }
+    }
+    ```
+
+- Create a `src/services/stock-items/index.ts` to reference above classes:
+
+    ```typescript title="src/services/stock-items/index.ts"
+    import {Provider} from "@nestjs/common";
+
+    import { StockItemsApi } from './stock-items.api';
+    import { StockItemsMockService } from './stock-items-mock.service';
+
+    export { StockItemsMockService, StockItemsApi };
+
+    export const provider: Provider = {
+        provide: StockItemsApi,
+        useClass: StockItemsMockService,
+    };
+    ```
+
+- Update the `src/services/providers.ts` file to reference the new service:
+    ```typescript title="src/services/providers.ts"
+    import { Provider } from "@nestjs/common";
+    import { provider as helloWorldProvider } from "./hello-world";
+    import { StockItemsMockService, StockItemsApi, provider as stockItemsProvider } from "./stock-items";
+
+    export * from './hello-world';
+
+    export const providers: Provider[] = [helloWorldProvider, stockItemsProvider];
+    export { StockItemsApi, StockItemsMockService };
+    ```
+
+- Update the controller test to inject the service into the controller and to return the value from the service:
+    ```typescript title="test/controllers/stock-items.controller.spec.ts"
+    import * as request from 'supertest';
+    import { Test, TestingModule } from '@nestjs/testing';
+    import { INestApplication } from '@nestjs/common';
+    import { AppModule } from '../../src/app.module';
+    import { StockItemsApi } from '../../src/services';
+
+
+    const mockResult = [
+        {
             id: "1",
             name: "Self-sealing stem bolt",
             stock: 10,
             unitPrice: 10.5,
             picture: "https://via.placeholder.com/32.png",
             manufacturer: "Bajor Galactic"
-          },
-          {
+        },
+        {
             id: "2",
             name: "Heisenberg compensator",
             stock: 20,
             unitPrice: 20.0,
             picture: "https://via.placeholder.com/32.png",
             manufacturer: "Federation Imports"
-          },
-          {
+        },
+        {
             id: "3",
             name: "Tooth sharpener",
             stock: 30,
             unitPrice: 5.25,
             picture: "https://via.placeholder.com/32.png",
             manufacturer: "Farenginar Exploits"
-          }
-        ];
-      }
-    }
-    ```
-
-- Add the mock service to the `index.ts` file in the services directory:
-    ```typescript title="src/services/index.ts"
-    ...
-    export * from './stock-items-mock.service';
-    ...
-    ```
-
-- Update the controller test to inject the service into the controller and to return the value from the service:
-    ```typescript title="test/controllers/stock-items.controller.spec.ts"
-    import { Application } from 'express';
-    import request from 'supertest';
-    import { Container } from 'typescript-ioc';
-
-    import { buildApiServer } from '../helper';
-    import Mock = jest.Mock;
-    import { StockItemsMockService } from '../../src/services';
+        }
+    ];
 
     describe('stock-item.controller', () => {
 
-        let app: Application;
-        let service_listStockItems: Mock;
+        let app: INestApplication;
+        let stockItemsService = { listStockItems: () => mockResult };
 
         beforeEach(async () => {
-            service_listStockItems = jest.fn();
-            Container.bind(StockItemsMockService).factory(
-                () => ({
-                    listStockItems: service_listStockItems
-                }),
-            );
 
-            const apiServer = buildApiServer();
+            const moduleFixture: TestingModule = await Test.createTestingModule({
+                imports: [AppModule],
+            })
+                .overrideProvider(StockItemsApi)
+                .useValue(stockItemsService)
+                .compile();
 
-            app = await apiServer.getApp();
+            app = moduleFixture.createNestApplication();
+            await app.init();
         });
-
 
         test('canary verifies test infrastructure', () => {
             expect(true).toEqual(true);
@@ -321,27 +382,12 @@ into javascript and to put the business logic in a separate service component.
 
         describe('given GET /stock-items', () => {
             describe('when service is successful', () => {
-                const expectedResult = [{ value: 'val' }];
-                beforeEach(() => {
-                    service_listStockItems.mockResolvedValue(expectedResult);
-                });
-
                 test('then return 200 status', async () => {
-                    return request(app).get('/stock-items').expect(200);
+                    return request(app.getHttpServer()).get('/stock-items').expect(200);
                 });
 
-                test('then should return value from service', async () => {
-                    return request(app).get('/stock-items').expect(expectedResult);
-                });
-            });
-
-            describe('when service fails', () => {
-                beforeEach(() => {
-                    service_listStockItems.mockRejectedValue(new Error('service failed'));
-                });
-
-                test('then return 502 error', async () => {
-                    return request(app).get('/stock-items').expect(502);
+                test('then should return an empty array', async () => {
+                    return request(app.getHttpServer()).get('/stock-items').expect(mockResult);
                 });
             });
         });
@@ -350,33 +396,22 @@ into javascript and to put the business logic in a separate service component.
 
 - Update the controller to inject the service and use it:
     ```typescript title="src/controllers/stock-items.controller.ts"
-    import { Inject } from 'typescript-ioc';
-    import { GET, Path } from 'typescript-rest';
-    import { HttpError } from 'typescript-rest/dist/server/model/errors';
+    import { Controller, Get, HttpException } from '@nestjs/common';
 
-    import { StockItemModel } from '../models';
-    import { StockItemsMockService } from '../services';
+    import { StockItemsApi } from '../services';
 
-    class BadGateway extends HttpError {
-      constructor(message?: string) {
-        super("BadGateway", message);
-        this.statusCode = 502;
-      }
-    }
-
-    @Path('stock-items')
+    @Controller('stock-items')
     export class StockItemsController {
-      @Inject
-      service: StockItemsMockService;
+        constructor(private readonly service: StockItemsApi) { }
 
-      @GET
-      async listStockItems(): Promise<StockItemModel[]> {
-        try {
-          return await this.service.listStockItems();
-        } catch (err) {
-          throw new BadGateway('There was an error');
+        @Get()
+        async listStockItems(): Promise<any[]> {
+            try {
+                return await this.service.listStockItems();
+            } catch (err) {
+                throw new HttpException(err, 502);
+            }
         }
-      }
     }
     ```
 
@@ -398,11 +433,11 @@ into javascript and to put the business logic in a separate service component.
 - Push the changes we've made to the repository:
     ```bash
     git add .
-    git commit -m "Adds a mock service implementation"
+    git commit -s -m "Adds a mock service implementation"
     git push
     ```
 
-- On the openshift console, open the [pipeline to see it running](/developer-intermediate/deploy-app/#6-view-your-application-pipeline).
+- CI pipeline should be kicked off, you can test the hosted application once complete.
 
 ## Add a GraphQL implementation of Stock Items
 
@@ -410,73 +445,46 @@ The GraphQL template supports both REST and GraphQL APIs for accessing backend s
 a REST controller to expose the results from the service and now we will do the same
 for GraphQL.
 
-- Create a `stock-items` GraphQL schema in the `schemas` directory:
-    ```typescript title="src/schemas/stock-item.schema.ts"
-    import { Field, Float, Int, ObjectType } from 'type-graphql';
-    import { StockItemModel } from '../models';
-
-    @ObjectType()
-    export class StockItem implements StockItemModel {
-        @Field()
-        id: string;
-        @Field()
-        manufacturer: string;
-        @Field()
-        name: string;
-        @Field({ nullable: true })
-        picture: string;
-        @Field(type => Int)
-        stock: number;
-        @Field(type => Float)
-        unitPrice: number;
-    }
-    ```
-
-- Add the stock-items schema to the `index.ts` in the schemas directory:
-    ```typescript title="src/schemas/index.ts"
-    ...
-    export * from './stock-item.schema'
-    ```
-
 - Add a `stock-item` GraphQL resolver in the `resolvers` directory:
-    ```typescript title="src/resolvers/stock-item.resolver.ts"
-    import { Query, Resolver } from 'type-graphql';
-    import { Inject } from 'typescript-ioc';
+    ```typescript title="src/resolvers/stock-items/stock-items.resolver.ts"
+    import { Query, Resolver } from "@nestjs/graphql";
 
-    import { resolverManager } from './_resolver-manager';
-    import { StockItem } from '../schemas';
-    import { StockItemModel } from '../models';
-    import { StockItemsMockService } from '../services';
+    import { StockItem, StockItemModel } from "../../models";
+    import { StockItemsApi } from "../../services";
 
     @Resolver(of => StockItem)
     export class StockItemResolver {
-        @Inject
-        service: StockItemsMockService;
+        constructor(private readonly service: StockItemsApi) { }
 
         @Query(returns => [StockItem])
         async stockItems(): Promise<StockItemModel[]> {
             return this.service.listStockItems();
         }
     }
-
-    resolverManager.registerResolver(StockItemResolver);
     ```
 
-    !!! note
-        The template includes a `resolverManager` component that simplifies the steps to
-        make the resolver available. All that is required to use the resolver is to register it, preferably
-        at the bottom of the module where it is defined.
+- Add the stock-items resolver to `index.ts` in the `stock-items` resolver directory:
+    ```typescript title="src/resolvers/stock-items/index.ts"
+    export * from './stock-items.resolver';
+    ```
 
-- Add the stock-items resolver to `index.ts` in the resolvers directory:
-    ```typescript title="src/resolvers/index.ts"
-    ...
-    export * from './stock-item.resolver';
+- Reference the `StockItemResolver` in `src/resolvers/providers.ts`:
+    ```typescript title="src/resolvers/providers.ts"
+    import {Provider} from "@nestjs/common";
+    import {HelloWorldResolver} from "./hello-world";
+    import {StockItemResolver} from "./stock-items";
+
+    export * from './hello-world';
+    export * from './stock-items';
+
+    export const providers: Provider[] = [HelloWorldResolver, StockItemResolver]
     ```
 
 - Start the service:
     ```bash
     npm start
     ```
+
 - Verify that the that the resolver is available using the Graph QL browser provided by the template:
 
 === "Gitpod"
@@ -489,54 +497,27 @@ for GraphQL.
 - Push the changes we've made to the repository:
     ```bash
     git add .
-    git commit -m "Adds a graphql interface"
+    git commit -s -m "Adds a graphql interface"
     git push
     ```
 
-- On the openshift console, open the [pipeline to see it running](/developer-intermediate/deploy-app/#6-view-your-application-pipeline).
+- CI pipeline should be kicked off, you can test the hosted application once complete.
 
 ## Create a service implementation that calls the microservice
 
-- Add a `stock-item-service.config` file in the `src/config` directory:
-    ```typescript title="src/config/stock-item-service.config.ts"
-    export class StockItemServiceConfig {
-      baseUrl: string;
-    }
+- Install required `superagent` module:
+
+    ```sh
+    npm i superagent
     ```
 
-- Add a `stock-item-service.config.provider` file in the `src/config` directory:
-    ```typescript title="src/config/stock-item-service.config.provider.ts"
-    import {ObjectFactory} from 'typescript-ioc';
-
-    const baseUrl: string = process.env.SERVICE_URL || 'localhost:9080';
-
-    export const stockItemConfigFactory: ObjectFactory = () => ({
-      baseUrl,
-    });
-    ```
-
-The config class separates how the config is loaded from how it is used. In this case the config is simply retrieved from an environment variable but in more complex cases the value(s) can be retrieved from external data sources.
-
-- Add the `stock-item-service.config` to an `index.ts` file of the `config` directory:
-    ```typescript title="src/config/index.ts"
-    import { StockItemServiceConfig } from './stock-item-service.config';
-    import { stockItemConfigFactory } from './stock-item-service.config.provider';
-    import { Container } from 'typescript-ioc';
-
-    export * from './stock-item-service.config';
-
-    Container.bind(StockItemServiceConfig).factory(stockItemConfigFactory);
-    ```
-
-- Create a `stock-items` service in the services directory that uses the config:
-    ```typescript title="src/services/stock-items.service.ts"
-    import { Inject } from 'typescript-ioc';
-    import { get, Response } from 'superagent';
-
+- Add a `src/services/stock-items/stock-items.service.ts` service implementation that we'll configure to target our actual stock items Java based service:
+    ```typescript title="src/services/stock-items/stock-items.service.ts"
+    import { Injectable } from '@nestjs/common';
     import { StockItemsApi } from './stock-items.api';
-    import { StockItemModel } from '../models';
-    import { StockItemServiceConfig } from '../config';
-    import { LoggerApi } from '../logger';
+    import { StockItemModel } from '../../models';
+    import { get } from 'superagent';
+    import { ConfigService } from '@nestjs/config';
 
     class StockItem {
         'id'?: string;
@@ -547,19 +528,14 @@ The config class separates how the config is loaded from how it is used. In this
         'stock'?: number;
     }
 
+    @Injectable()
     export class StockItemsService implements StockItemsApi {
-        @Inject
-        _logger: LoggerApi;
-        @Inject
-        config: StockItemServiceConfig;
-
-        get logger(): LoggerApi {
-            return this._logger.child('StockItemsService');
-        }
+        constructor(private configService: ConfigService) { }
 
         async listStockItems(): Promise<StockItemModel[]> {
+            const serviceUrl = this.configService.get<string>('SERVICE_URL');
             return new Promise((resolve, reject) => {
-                get(`${this.config.baseUrl}/stock-items`)
+                get(`${serviceUrl}/stock-items`)
                     .set('Accept', 'application/json')
                     .then(res => {
                         resolve(this.mapStockItems(res.body));
@@ -587,56 +563,44 @@ The config class separates how the config is loaded from how it is used. In this
     }
     ```
 
-- Add `stock-item.service` to `index.ts` in the `services` directory:
-    ```typescript title="src/services/index.ts"
-    ...
-    export * from './stock-items.service';
+    !!! note
+        From now on, we'll need a `SERVICE_URL` environment variable to be used as base URL to reach our Java microservice.
+
+
+- Update `src/services/stock-items/index.ts` to reference and use our newly created service as provider:
+    ```typescript title="src/services/stock-items/index.ts"
+    import {Provider} from "@nestjs/common";
+
+    import { StockItemsApi } from './stock-items.api';
+    import { StockItemsMockService } from './stock-items-mock.service';
+    import { StockItemsService } from './stock-items.service';
+
+    export { StockItemsMockService, StockItemsApi, StockItemsService };
+
+    export const provider: Provider = {
+        provide: StockItemsApi,
+        useClass: StockItemsService,
+    };
     ```
 
-- Replace `StockItemsMockService` with `StockItemsService` in the following files:
-  - `src/resolvers/stock-item.resolver.ts`
-  - `src/controllers/stock-items.controller.ts`
-  - `test/controllers/stock-items.controller.spec.ts`
-
-- Modify `connectsTo` property to the values.yaml file of the Helm chart. The value of the property should match the Kubernetes service of the microservice. (For template projects, the service name is the same as the name of the application which is that same as the name of the repository.)
-    ```yaml title="chart/base/values.yaml"
-    ...
-
-    connectsTo: inv-svc-{your initials}
-
-    ...
+- Test the application again by setting `SERVICE_URL` before running the app:
+    ```bash
+    export SERVICE_URL=http://localhost:8080 # CHANGEME
+    npm start
     ```
 
-    !!! info
-        The `values.yaml` file of the Helm chart defines the variables that can be provided to the
-        template as input. Now that we've added a new variable, we will need to update the appropriate template file to use our new variable.
+- Last step before checking out our changes to git is to make sure our Kubernetes/OpenShift deployment will get the `SERVICE_URL` environment variable configured. To do so, create a secret and patch the deployment to use it as source for environment variables:
 
-- Add a new environment variable named `SERVICE_URL` to the list of existing environment variables in deployment.yaml. (`SERVICE_URL` is the name we gave the environment variable in our `stock-item-service.config` class as the first step in this section.) The value of this environment variable should come from the `connectsTo` value we defined. You can add
-`| quote` to wrap the value in quotes in case the value is not formatted correctly:
-    ```yaml title="chart/base/templates/deployment.yaml"
-      ...
-      env:
-        - name: INGRESS_HOST
-          value: ""
-        - name: PROTOCOLS
-          value: ""
-        - name: LOG_LEVEL
-          value: {{ .Values.logLevel | quote }}
-        - name: SERVICE_URL
-          value: {{ printf "%s:80" .Values.connectsTo | quote }}
-      ...
+    ```sh
+    oc create secret generic inv-bff-${INITIALS}-config --from-literal=SERVICE_URL=http://inv-svc-${INITIALS}:8080
+    kubectl set env --from=secret/inv-bff-${INITIALS}-config deployment/inv-bff-${INITIALS}
     ```
 
-    !!! info
-        `deployment.yaml` is a templatized Kubernetes yaml file that describes the deployment of our component.
-        The deployment will create one or more pods based on the pod template defined in the deployment.
-        Each pod that starts will have the environment variables that we have defined in the `env` section available for the container image to reference.
-
-- Commit and push the changes to git:
+- After validation, commit and push the changes to git:
     ```bash
     git add .
-    git commit -m "Adds service implementation"
+    git commit -s -m "Adds service implementation"
     git push
     ```
 
-- On the openshift console, open the [pipeline to see it running](/developer-intermediate/deploy-app/#6-view-your-application-pipeline).
+- CI pipeline should be kicked off, you can test the hosted application once complete.
