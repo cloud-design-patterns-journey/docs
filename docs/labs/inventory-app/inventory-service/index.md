@@ -2,11 +2,11 @@
 
 ## Setup
 
-### Create your OpenShift project and CI pipeline
+### Create your OpenShift project, Git Repository and CI pipeline
 
 - Create a new repository for the service from the [Spring Boot Microservice](https://github.com/cloud-design-patterns-journey/template-java-spring/generate) template. Make the cloned repository public.
 
-    !!! note
+    !!! warning
         In order to prevent naming collisions if you are running this as part of a workshop, chose the GitHub organization you have been invited to as `Owner` and name the repository `inv-svc-${INITIALS}`, replacing `${INITIALS}` with your actual initials.
 
 - Deploy this application with Tekton:
@@ -24,13 +24,57 @@
       oc login --token=<OCP_TOKEN> --server=<OCP_SERVER>
       ```
 
-    - Create the tekton pipeline for the backend service in a new project:
+    - Create a new `inventory-${INITIALS}-dev` project (setting the `INITIALS` environment variables with your actual initials to have a unique name):
 
       ```sh
       export INITIALS=ns # CHANGEME
-      oc new project inventory-${INITIALS}-dev
+      oc new-project inventory-${INITIALS}-dev
+      ```
+
+    - Create `registry-config` and `ci-config` secrets required for your pipeline runs to access your container registry:
+
+      ```yaml
+      cat <<EOF | oc apply -f -
+      ---
+      kind: Secret
+      apiVersion: v1
+      metadata:
+        name: registry-config
+        namespace: ci-tools
+      stringData:
+        config.json: '{"auths":...}' # CHANGEME
+      type: Opaque
+      ---
+      kind: Secret
+      apiVersion: v1
+      metadata:
+        name: ci-config
+        namespace: ci-tools
+      stringData:
+        img-namespace: library # CHANGEME
+        img-server: core.harbor.example.com # CHANGEME
+      type: Opaque
+      EOF
+      ```
+
+    !!! note
+        If you are doing this lab as part of a workshop secrets have been created for you in the `ci-tools` namespace, you just need to copy them:
+
+          ```sh
+          oc get secret registry-config -n ci-tools -o yaml | sed "s/ci-tools/inventory-${INITIALS}-dev/g" | oc apply -f -
+          oc get secret ci-config -n ci-tools -o yaml | sed "s/ci-tools/inventory-${INITIALS}-dev/g" | oc apply -f -
+          ```
+
+    - Clone the repo locally:
+
+      ```sh
       git clone https://github.com/cloud-design-patterns-journey/inv-svc-${INITIALS}.git
       cd inv-svc-${INITIALS}
+      ```
+
+    - Create the tekton pipeline for the backend service your new project:
+
+      ```sh
       oc adm policy add-scc-to-user privileged -z pipeline
       tkn pac create repository
       ```
@@ -38,6 +82,23 @@
     !!! note
         - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/install/overview/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
         - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${INITIALS}-dev` project/namespace.
+
+    - In OpenShift console (**Pipelines Section > Pipelines > Repositories**), edit the newly created `Repository` YAML to add cluster specific configuration (e.g. image repository):
+
+      ```yaml
+      ...
+      spec:
+        params:
+          - name: img-server
+            secret_ref:
+              name: ci-config
+              key: img-server
+          - name: img-namespace
+            secret_ref:
+              name: ci-config
+              key: img-namespace
+      ...
+      ```
 
 ## Create initial components
 
@@ -68,11 +129,16 @@ for components.
 
 We will start by creating the initial application component.
 
-- Create a class named `Application` in the `com.ibm.inventory_management.app` package.
+- Copy the template app into a new `inventory_management` app:
 
-- Add the `@SpringBootApplication` and `@ComponentScan` annotation to the class. The `@ComponentScan`
-  annotation should include `com.ibm.inventory_management.*`, `com.ibm.cloud_native_toolkit.*`, and `com.ibm.health`
-  packages.
+  ```sh
+  mv src/main/java/com/ibm/hello src/main/java/com/ibm/inventory_management
+  sed -i -e 's/com.ibm.hello/com.ibm.inventory_management/g' src/main/java/com/ibm/inventory_management/*/*.java
+  rm src/main/java/com/ibm/inventory_management/HelloWatsonApplication.java
+  ```
+
+- Create a class named `Application` in the `com.ibm.inventory_management.app` package and add the `@SpringBootApplication` and `@ComponentScan` annotation to the class. The `@ComponentScan`
+  annotation should include `com.ibm.inventory_management.*`, `com.ibm.cloud_native_toolkit.*`, and `com.ibm.health` packages:
 
   ```java title="src/main/java/com/ibm/inventory_management/app/Application.java"
   package com.ibm.inventory_management.app;
@@ -88,11 +154,8 @@ We will start by creating the initial application component.
   import org.springframework.context.annotation.ComponentScan;
   import org.springframework.core.env.Environment;
 
-  import springfox.documentation.swagger2.annotations.EnableSwagger2;
-
   @SpringBootApplication
-  @EnableSwagger2
-  @ComponentScan({"com.ibm.inventory_management.*", "com.ibm.cloud_garage.*", "com.ibm.health"})
+  @ComponentScan({ "com.ibm.inventory_management.*", "com.ibm.cloud_garage.*", "com.ibm.health" })
   public class Application extends SpringBootServletInitializer {
       @Autowired
       Environment environment;
@@ -116,21 +179,18 @@ We will start by creating the initial application component.
           return application.sources(Application.class);
       }
   }
-  ```
 
-- Delete `application.app`
-
-  ```
-  git rm -r src/main/java/application/
   ```
 
 - Commit and push the changes to Git.
 
   ```bash
   git add .
-  git commit -m "Adds Application and Removes default Application class"
+  git commit -s -m "Adds Application and Removes sample app"
   git push
   ```
+
+- The CI pipeline should kick off. Once complete, you will be able to test the deployed service by going to the service route (accessible from openshift Console, or by running `oc get route`).
 
 ### Add StockItem controller
 
@@ -279,9 +339,11 @@ for the REST service.
 
   ```bash
   git add .
-  git commit -m "Adds StockItemController"
+  git commit -s -m "Adds StockItemController"
   git push
   ```
+
+- The CI pipeline should kick off. Once complete, you will be able to test the deployed service by going to the service route (accessible from openshift Console, or by running `oc get route`).
 
 ### Add a service for providing results
 
@@ -553,20 +615,6 @@ should be placed in a component that is given a `@Service` annotation.
   }
   ```
 
-- Replace the `api()` method in the SwaggerDocket class to restrict the swagger page to only show the `/stock-items` API
-
-  ```java title="src/main/java/com/ibm/cloud_native_toolkit/swagger/SwaggerDocket.java"
-  @Bean
-  public Docket api() {
-    return new Docket(DocumentationType.SWAGGER_2)
-            .select()
-            .apis(buildApiRequestHandler()::test)
-            .paths(PathSelectors.regex(".*stock-item.*"))
-            .build()
-            .apiInfo(buildApiInfo());
-  }
-  ```
-
 ### Verify the service locally and push the changes
 
 - Start the application
@@ -592,11 +640,11 @@ should be placed in a component that is given a `@Service` annotation.
 
   ```bash
   git add .
-  git commit -m "Adds StockItem service implementation"
+  git commit -s -m "Adds StockItem service implementation"
   git push
   ```
 
-- The pipeline should kick off and you will be able to see the running service by running `oc endpoints -n dev-{initials}` and selecting the route of your service
+- The CI pipeline should kick off. Once complete, you will be able to test the deployed service by going to the service route (accessible from openshift Console, or by running `oc get route`).
 
 ## Complete CRUD operations
 ### Add POST, PUT and DELETE routes
@@ -745,6 +793,8 @@ should be placed in a component that is given a `@Service` annotation.
 
   ```bash
   git add .
-  git commit -m "Added CRUD operations"
+  git commit -s -m "Added CRUD operations"
   git push
   ```
+
+- The CI pipeline should kick off. Once complete, you will be able to test the deployed service by going to the service route (accessible from openshift Console, or by running `oc get route`).
