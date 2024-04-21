@@ -14,7 +14,7 @@
     !!! note
         You should have the [`tkn`](https://github.com/tektoncd/cli?tab=readme-ov-file#installing-tkn), [`tkn pac`](https://pipelinesascode.com/docs/guide/cli/#install) and `oc` CLIs installed. `oc` can be installed through the help section of your OpenShift console.
     
-    - In the OpenShift web console, click on email address top right, click on **Copy login command** and get the OpenShift login command, which includes a token.
+    - In the OpenShift web console, click on the user ID on the top right, click on **Copy login command** and get the OpenShift login command, which includes a token.
     
       ![OpenShift Login](../../../images/common/LoginCommand.png)
     
