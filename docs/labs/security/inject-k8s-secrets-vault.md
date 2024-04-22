@@ -92,24 +92,24 @@ The recommended way to run Vault on Kubernetes is via the [Helm chart](https://d
     ```yaml
     cat <<EOF > vault-ocp.values.yaml
     global:
-    openshift: true
+       openshift: true
 
     injector:
-    image:
-        repository: "registry.connect.redhat.com/hashicorp/vault-k8s"
-        tag: "1.4.1-ubi"
+       image:
+          repository: "registry.connect.redhat.com/hashicorp/vault-k8s"
+          tag: "1.4.1-ubi"
 
     agentImage:
-        repository: "registry.connect.redhat.com/hashicorp/vault"
-        tag: "1.16.1-ubi"
+       repository: "registry.connect.redhat.com/hashicorp/vault"
+       tag: "1.16.1-ubi"
 
     server:
-    image:
-        repository: "registry.connect.redhat.com/hashicorp/vault"
-        tag: "1.16.1-ubi"
+       image:
+          repository: "registry.connect.redhat.com/hashicorp/vault"
+          tag: "1.16.1-ubi"
 
     readinessProbe:
-        path: "/v1/sys/health?uninitcode=204"
+       path: "/v1/sys/health?uninitcode=204"
     EOF
     ```
 
