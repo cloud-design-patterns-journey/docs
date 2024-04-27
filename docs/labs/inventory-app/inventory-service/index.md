@@ -7,7 +7,7 @@
 - Create a new repository for the service from the [Spring Boot Microservice](https://github.com/cloud-design-patterns-journey/template-java-spring/generate) template. Make the cloned repository public.
 
     !!! warning
-        In order to prevent naming collisions if you are running this as part of a workshop, chose the GitHub organization you have been invited to as `Owner` and name the repository `inv-svc-${INITIALS}`, replacing `${INITIALS}` with your actual initials.
+        In order to prevent naming collisions if you are running this as part of a workshop, chose the GitHub organization you have been invited to as `Owner` and name the repository `inv-svc-${UNIQUE_SUFFIX}`, replacing `${UNIQUE_SUFFIX}` with your team name or initials.
 
 - Deploy this application with Tekton:
 
@@ -24,11 +24,11 @@
       oc login --token=<OCP_TOKEN> --server=<OCP_SERVER>
       ```
 
-    - Create a new `inventory-${INITIALS}-dev` project (setting the `INITIALS` environment variables with your actual initials to have a unique name):
+    - Create a new `inventory-${UNIQUE_SUFFIX}-dev` project (setting the `UNIQUE_SUFFIX` environment variables with your team name or initials to have a unique name):
 
       ```sh
-      export INITIALS=ns # CHANGEME
-      oc new-project inventory-${INITIALS}-dev
+      export UNIQUE_SUFFIX=ns # CHANGEME
+      oc new-project inventory-${UNIQUE_SUFFIX}-dev
       ```
 
     - Create `registry-config` and `ci-config` secrets required for your pipeline runs to access your container registry:
@@ -61,15 +61,15 @@
         If you are doing this lab as part of a workshop secrets have been created for you in the `ci-tools` namespace, you just need to copy them:
 
           ```sh
-          oc get secret registry-config -n ci-tools -o yaml | sed "s/ci-tools/inventory-${INITIALS}-dev/g" | oc apply -f -
-          oc get secret ci-config -n ci-tools -o yaml | sed "s/ci-tools/inventory-${INITIALS}-dev/g" | oc apply -f -
+          oc get secret registry-config -n ci-tools -o yaml | sed "s/ci-tools/inventory-${UNIQUE_SUFFIX}-dev/g" | oc apply -f -
+          oc get secret ci-config -n ci-tools -o yaml | sed "s/ci-tools/inventory-${UNIQUE_SUFFIX}-dev/g" | oc apply -f -
           ```
 
     - Clone the repo locally:
 
       ```sh
-      git clone https://github.com/cloud-design-patterns-journey/inv-svc-${INITIALS}.git
-      cd inv-svc-${INITIALS}
+      git clone https://github.com/cloud-design-patterns-journey/inv-svc-${UNIQUE_SUFFIX}.git
+      cd inv-svc-${UNIQUE_SUFFIX}
       ```
 
     - Create the tekton pipeline for the backend service your new project:
@@ -81,7 +81,7 @@
 
     !!! note
         - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/install/overview/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
-        - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${INITIALS}-dev` project/namespace.
+        - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${UNIQUE_SUFFIX}-dev` project/namespace.
 
     - In OpenShift console (**Pipelines Section > Pipelines > Repositories**), edit the newly created `Repository` YAML to add cluster specific configuration (e.g. image repository):
 

@@ -13,14 +13,14 @@ The Inventory solution will use [GraphQL](https://graphql.org/) for its BFF laye
 ## Setup
 
 !!! note
-     Following this section means you have already deployed and configured the backend service from the previous step. Your OpenShift cluster should have the `inventory-${INITIALS}-dev` project (with `${INITIALS}` as your actual initials), that has been configured with `ci-config` and `registry-config` secrets during previous lab.
+     Following this section means you have already deployed and configured the backend service from the previous step. Your OpenShift cluster should have the `inventory-${UNIQUE_SUFFIX}-dev` project (with `${UNIQUE_SUFFIX}` as your team name or initials), that has been configured with `ci-config` and `registry-config` secrets during previous lab.
 
 ### Create your OpenShift project, Git Repository and CI pipeline
 
 - Create a new repository from the [Typescript GraphQL template](https://github.com/cloud-design-patterns-journey/template-graphql-typescript/generate).
 
     !!! warning
-        In order to prevent naming collisions if you are running this as part of a workshop, chose the GitHub organization you have been invited to as `Owner` and name the repository `inv-bff-${INITIALS}`, replacing `${INITIALS}` with your actual initials.
+        In order to prevent naming collisions if you are running this as part of a workshop, chose the GitHub organization you have been invited to as `Owner` and name the repository `inv-bff-${UNIQUE_SUFFIX}`, replacing `${UNIQUE_SUFFIX}` with your team name or initials.
 
 - Deploy this application with Tekton:
 
@@ -37,18 +37,18 @@ The Inventory solution will use [GraphQL](https://graphql.org/) for its BFF laye
       oc login --token=<OCP_TOKEN> --server=<OCP_SERVER>
       ```
     
-    - Move to your `inventory-${INITIALS}-dev` project created in previous lab:
+    - Move to your `inventory-${UNIQUE_SUFFIX}-dev` project created in previous lab:
     
       ```sh
-      export INITIALS=ns # CHANGEME
-      oc project inventory-${INITIALS}-dev
+      export UNIQUE_SUFFIX=ns # CHANGEME
+      oc project inventory-${UNIQUE_SUFFIX}-dev
       ```
 
     - Clone the repo locally:
 
       ```sh
-      git clone https://github.com/cloud-design-patterns-journey/inv-bff-${INITIALS}.git
-      cd inv-bff-${INITIALS}
+      git clone https://github.com/cloud-design-patterns-journey/inv-bff-${UNIQUE_SUFFIX}.git
+      cd inv-bff-${UNIQUE_SUFFIX}
       ```
 
     - Create the tekton pipeline for the backend service your new project:
@@ -60,7 +60,7 @@ The Inventory solution will use [GraphQL](https://graphql.org/) for its BFF laye
 
     !!! note
         - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/install/overview/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
-        - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${INITIALS}-dev` project/namespace.
+        - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${UNIQUE_SUFFIX}-dev` project/namespace.
 
     - In OpenShift console (**Pipelines Section > Pipelines > Repositories**), edit the newly created `Repository` YAML to add cluster specific configuration (e.g. image repository):
 
@@ -592,8 +592,8 @@ for GraphQL.
 - Last step before checking out our changes to git is to make sure our Kubernetes/OpenShift deployment will get the `SERVICE_URL` environment variable configured. To do so, create a secret and patch the deployment to use it as source for environment variables:
 
     ```sh
-    oc create secret generic inv-bff-${INITIALS}-config --from-literal=SERVICE_URL=http://inv-svc-${INITIALS}:8080
-    kubectl set env --from=secret/inv-bff-${INITIALS}-config deployment/inv-bff-${INITIALS}
+    oc create secret generic inv-bff-${UNIQUE_SUFFIX}-config --from-literal=SERVICE_URL=http://inv-svc-${UNIQUE_SUFFIX}:8080
+    kubectl set env --from=secret/inv-bff-${UNIQUE_SUFFIX}-config deployment/inv-bff-${UNIQUE_SUFFIX}
     ```
 
 - After validation, commit and push the changes to git:

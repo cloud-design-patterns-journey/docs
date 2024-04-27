@@ -5,14 +5,14 @@
 ## Setup
 
 !!! note
-    Following this section means you have already deployed and configured the backend and BFF services from the previous steps. Your OpenShift cluster should have the `inventory-${INITIALS}-dev` project (with `${INITIALS}` as your actual initials), that has been configured with `ci-config` and `registry-config` secrets during previous lab.
+    Following this section means you have already deployed and configured the backend and BFF services from the previous steps. Your OpenShift cluster should have the `inventory-${UNIQUE_SUFFIX}-dev` project (with `${UNIQUE_SUFFIX}` as your team name or initials), that has been configured with `ci-config` and `registry-config` secrets during previous lab.
 
 ### Create your OpenShift project, Git Repository and CI pipeline
 
-- Create a new repository from the [Carbon React template](https://github.com/cloud-design-patterns-journey/template-carbon-react).
+- Create a new repository from the [Carbon React template](https://github.com/cloud-design-patterns-journey/template-carbon-react/generate).
 
     !!! warning
-        In order to prevent naming collisions if you are running this as part of a workshop, chose the GitHub organization you have been invited to as `Owner` and name the repository `inv-ui-${INITIALS}`, replacing `${INITIALS}` with your actual initials.
+        In order to prevent naming collisions if you are running this as part of a workshop, chose the GitHub organization you have been invited to as `Owner` and name the repository `inv-ui-${UNIQUE_SUFFIX}`, replacing `${UNIQUE_SUFFIX}` with your team name or initials.
 
 - Deploy this application with Tekton:
 
@@ -29,18 +29,18 @@
       oc login --token=<OCP_TOKEN> --server=<OCP_SERVER>
       ```
     
-    - Move to your `inventory-${INITIALS}-dev` project created in previous lab:
+    - Move to your `inventory-${UNIQUE_SUFFIX}-dev` project created in previous lab:
     
       ```sh
-      export INITIALS=ns # CHANGEME
-      oc project inventory-${INITIALS}-dev
+      export UNIQUE_SUFFIX=ns # CHANGEME
+      oc project inventory-${UNIQUE_SUFFIX}-dev
       ```
 
     - Clone the repo locally:
 
       ```sh
-      git clone https://github.com/cloud-design-patterns-journey/inv-ui-${INITIALS}.git
-      cd inv-ui-${INITIALS}
+      git clone https://github.com/cloud-design-patterns-journey/inv-ui-${UNIQUE_SUFFIX}.git
+      cd inv-ui-${UNIQUE_SUFFIX}
       ```
 
     - Create the tekton pipeline for the backend service your new project:
@@ -52,7 +52,7 @@
 
     !!! note
         - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/install/overview/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
-        - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${INITIALS}-dev` project/namespace.
+        - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${UNIQUE_SUFFIX}-dev` project/namespace.
 
     - In OpenShift console (**Pipelines Section > Pipelines > Repositories**), edit the newly created `Repository` YAML to add cluster specific configuration (e.g. image repository):
 
@@ -231,7 +231,7 @@ Based on the requirements of this first use case, we will create a `StockItemLis
 
 Now that we've created the initial components, we can start to customize the `StockItemList` to match the data for our application. So far, we've built a UI that displays a hard-coded set of data in a table. Eventually, we want to display dynamic data provided from a database in the table. As a first step towards that goal, we need to separate the UI logic from the logic that retrieves the data. We will do that with a service component. For this first pass the service component will just return mock data.
 
-- Create a `src/services`:
+- Create a `src/services` directory:
     ```sh
     mkdir src/services
     ```
@@ -516,8 +516,23 @@ Now that we have a mock service that injects data, we can build an implementatio
     export default App;
     ```
 
+
+- Test the application again by setting `API_HOST` before running the app:
+    ```bash
+    export API_HOST=http://bff.example.com:3000 # CHANGEME
+    yarn start:dev
+    ```
+
 - Open the application to check that your app is now retrieving data from BFF GraphQL endpoint:
     ![GraphQL data view](../../../images/inventory-ui/ui-graphql-data.png)
+    
+
+- Last step before checking out our changes to git is to make sure our Kubernetes/OpenShift deployment will get the `API_HOST` environment variable configured. To do so, create a secret and patch the deployment to use it as source for environment variables:
+
+    ```sh
+    oc create secret generic inv-ui-${UNIQUE_SUFFIX}-config --from-literal=API_HOST=http://inv-bff-${UNIQUE_SUFFIX}:3000
+    kubectl set env --from=secret/inv-ui-${UNIQUE_SUFFIX}-config deployment/inv-ui-${UNIQUE_SUFFIX}
+    ```
 
 - Push the changes we've made to the repository:
     ```bash

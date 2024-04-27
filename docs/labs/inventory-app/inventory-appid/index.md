@@ -165,7 +165,7 @@ The following prerequisites are required for AppID integration:
 
 ### AppID redirect url config
 
-- Get the ingress for the UI component by running `igc ingress -n dev-{initials}`.
+- Get the ingress for the UI component by running `igc ingress -n inventory-${UNIQUE_SUFFIX}-dev`.
 
 - Open the IBM Cloud resource list - `https://cloud.ibm.com/resources`
 
