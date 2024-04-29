@@ -40,7 +40,7 @@
       apiVersion: v1
       metadata:
         name: registry-config
-        namespace: ci-tools
+        namespace: inventory-${UNIQUE_SUFFIX}-dev
       stringData:
         config.json: '{"auths":...}' # CHANGEME
       type: Opaque
@@ -49,7 +49,7 @@
       apiVersion: v1
       metadata:
         name: ci-config
-        namespace: ci-tools
+        namespace: inventory-${UNIQUE_SUFFIX}-dev
       stringData:
         img-namespace: library # CHANGEME
         img-server: core.harbor.example.com # CHANGEME
