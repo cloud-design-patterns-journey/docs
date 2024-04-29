@@ -185,7 +185,7 @@ by a component and provide a good way to load the modules that will be injected 
     - Once you run the application, Gitpod gives the option to make the port **Public**, in the bottom-right corner.Once you make the port Public, it gives you the option to **Open Preview** or **Open Browser**.
 
 === "Desktop/Laptop" 
-    - Open a browser to `http://localhost:3000/api-docs` to see the swagger page
+    - Open a browser to `http://localhost:3000` to see the app
 
     - Expand our service from the list, click `Try it out`, then click `Execute`
 
@@ -426,7 +426,7 @@ into javascript and to put the business logic in a separate service component.
     - Once you run the application, Gitpod gives the option to make the port **Public**, in the bottom-right corner.Once you make the port Public, it gives you the option to **Open Preview** or **Open Browser**.
 
 === "Desktop/Laptop" 
-    - Open a browser to `http://localhost:3000/api-docs` to see the swagger page
+    - Open a browser to `http://localhost:3000` to see the app
 
     - Expand our service from the list, click `Try it out`, then click `Execute`
 
