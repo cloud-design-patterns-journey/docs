@@ -738,7 +738,7 @@ should be placed in a component that is given a `@Service` annotation.
   }
   ```
 - Update the `StockItemController.java` class to provide the additional routes
-  ```java title="src/main/java/com/ibm/inventory_management/services/StockItemController.java"
+  ```java title="src/main/java/com/ibm/inventory_management/controllers/StockItemController.java"
   package com.ibm.inventory_management.controllers;
   
   import java.util.List;
