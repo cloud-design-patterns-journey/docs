@@ -34,9 +34,15 @@ This tutorial requires:
 
 Install `kubectl` with [Homebrew](https://brew.sh/) (Linux/Macos).
 
-    $ brew install kubernetes-cli
+```sh
+brew install kubernetes-cli
+```
     
 Install `helm` with Homebrew.
+
+```sh
+brew install helm
+```
 
 This tutorial was last tested 21 May 2023 on a macOS 13.3.1 using the following software versions.
 
@@ -113,11 +119,10 @@ The recommended way to run Vault on Kubernetes is via the [Helm chart](https://d
     EOF
     ```
 
-4.  Create a new `lab-security-${INITIALS}` namespace (suffixed with your initials):
+4.  Create a new `lab-security` namespace (suffixed with your initials):
     ```sh
-    $ export INITIALS=ns # CHANGEME
-    $ kubectl create namespace lab-security-${INITIALS}
-    $ kubectl config set-context --current --namespace lab-security-${INITIALS}
+    $ kubectl create namespace lab-security
+    $ kubectl config set-context --current --namespace lab-security
     ```
 5.  Install the latest version of the Vault server running in development mode. If running on OpenShift add `-f vault-ocp.values.yaml` to use additional configuration:
     
@@ -125,9 +130,9 @@ The recommended way to run Vault on Kubernetes is via the [Helm chart](https://d
         NAME: vault
         ## ...
     
-    The Vault pod and Vault Agent Injector pod are deployed in the `lab-security-${INITIALS}` namespace.
+    The Vault pod and Vault Agent Injector pod are deployed in the `lab-security` namespace.
     
-6.  Display all the pods in the `lab-security-${INITIALS}` namespace.
+6.  Display all the pods in the `lab-security` namespace.
     
     ```sh
     $ kubectl get pods
@@ -155,7 +160,7 @@ The applications that you deploy in the [Inject secrets into the pod](https://de
     
     Your system prompt is replaced with a new prompt `/ $`. Commands issued at this prompt are executed on the `vault-0` container.
     
-2.  Enable kv-v2 secrets at the path `internal`.
+2.  If not already enabled, enable kv-v2 secrets at the path `internal` (expect an error if already enabled).
     
         $ vault secrets enable -path=internal kv-v2
         Success! Enabled the kv-v2 secrets engine at: internal/
@@ -165,20 +170,23 @@ The applications that you deploy in the [Inject secrets into the pod](https://de
     
     This tutorial focuses on Vault's integration with Kubernetes and not interacting the key-value secrets engine. For more information refer to the [Static Secrets: Key/Value Secret](https://developer.hashicorp.com/vault/tutorials/secrets-management/static-secrets) tutorial.
     
-3.  Create a secret at path `internal/database/config` with a `username` and `password`.
-    
-        $ vault kv put internal/database/config username="db-readonly-username" password="db-secret-password"
-        Key              Value
-        ---              -----
-        created_time     2020-03-25T19:03:57.127711644Z
-        deletion_time    n/a
-        destroyed        false
-        version          1
+3.  Create a secret at path `internal/database/config-${INITIALS}` with a `username` and `password`.
+
+    ```sh
+    $ export INITIALS=ns # CHANGEME
+    $ vault kv put internal/database/config-${INITIALS} username="db-readonly-username" password="db-secret-password"
+    Key              Value
+    ---              -----
+    created_time     2020-03-25T19:03:57.127711644Z
+    deletion_time    n/a
+    destroyed        false
+    version          1
+    ```
         
     
-4.  Verify that the secret is defined at the path `internal/database/config`.
+4.  Verify that the secret is defined at the path `internal/database/config-${INITIALS}`.
     
-        $ vault kv get internal/database/config
+        $ vault kv get internal/database/config-${INITIALS}
         ====== Metadata ======
         Key              Value
         ---              -----
@@ -195,21 +203,10 @@ The applications that you deploy in the [Inject secrets into the pod](https://de
         
     
     The secret is ready for the application.
-    
-5.  Lastly, exit the `vault-0` pod.
-    
 
 Vault provides a [Kubernetes authentication](https://developer.hashicorp.com/vault/docs/auth/kubernetes) method that enables clients to authenticate with a Kubernetes Service Account Token. This token is provided to each pod when it is created.
 
-1.  Start an interactive shell session on the `vault-0` pod.
-    
-        $ kubectl exec -it vault-0 -- /bin/sh
-        / $
-        
-    
-    Your system prompt is replaced with a new prompt `/ $`. Commands issued at this prompt are executed on the `vault-0` container.
-    
-2.  Enable the Kubernetes authentication method.
+1.  If not enabled already, enable the Kubernetes authentication method (expect an error if already enabled).
     
         $ vault auth enable kubernetes
         Success! Enabled kubernetes auth method at: kubernetes/
@@ -217,7 +214,7 @@ Vault provides a [Kubernetes authentication](https://developer.hashicorp.com/vau
     
     Vault accepts a service token from any client in the Kubernetes cluster. During authentication, Vault verifies that the service account token is valid by querying a token review Kubernetes endpoint.
     
-3.  Configure the Kubernetes authentication method to use the location of the Kubernetes API.
+2.  Configure the Kubernetes authentication method to use the location of the Kubernetes API.
     
     Note
     
@@ -236,39 +233,38 @@ Vault provides a [Kubernetes authentication](https://developer.hashicorp.com/vau
     
     The environment variable `KUBERNETES_PORT_443_TCP_ADDR` is defined and references the internal network address of the Kubernetes host.
     
-    For a client to read the secret data defined at `internal/database/config`, requires that the read capability be granted for the path `internal/data/database/config`. This is an example of a [policy](https://developer.hashicorp.com/vault/docs/concepts/policies). A policy defines a set of capabilities.
+    For a client to read the secret data defined at `internal/database/config-${INITIALS}`, requires that the read capability be granted for the path `internal/data/database/config-${INITIALS}`. This is an example of a [policy](https://developer.hashicorp.com/vault/docs/concepts/policies). A policy defines a set of capabilities.
     
-4.  Write out the policy named `internal-app` that enables the `read` capability for secrets at path `internal/data/database/config`.
+3.  Write out the policy named `internal-app-${INITIALS}` that enables the `read` capability for secrets at path `internal/data/database/config-${INITIALS}`.
     
-        $ vault policy write internal-app - <<EOF
-        path "internal/data/database/config" {
+        $ vault policy write internal-app-${INITIALS} - <<EOF
+        path "internal/data/database/config-${INITIALS}" {
            capabilities = ["read"]
         }
         EOF
         
     
-5.  Create a Kubernetes authentication role named `internal-app`.
+4.  Create a Kubernetes authentication role named `internal-app-${INITIALS}`.
     
     ```sh
-    $ export INITIALS=ns # changeme
-    $ vault write auth/kubernetes/role/internal-app \
-            bound_service_account_names=internal-app \
+    $ vault write auth/kubernetes/role/internal-app-${INITIALS} \
+            bound_service_account_names=internal-app-${INITIALS} \
             bound_service_account_namespaces=lab-security-${INITIALS} \
-            policies=internal-app \
+            policies=internal-app-${INITIALS} \
             ttl=24h
     ```
     
     Successful output from the command resembles this example:
     
-        Success! Data written to: auth/kubernetes/role/internal-app
+        Success! Data written to: auth/kubernetes/role/internal-app-${INITIALS}
         
     
-    The role connects the Kubernetes service account, `internal-app`, and namespace, `lab-security-${INITIALS}`, with the Vault policy, `internal-app`. The tokens returned after authentication are valid for 24 hours.
+    The role connects the Kubernetes service account, `internal-app-${INITIALS}`, and namespace, `lab-security-${INITIALS}`, with the Vault policy, `internal-app-${INITIALS}`. The tokens returned after authentication are valid for 24 hours.
     
-6.  Lastly, exit the `vault-0` pod.
+5.  Lastly, exit the `vault-0` pod.
     
 
-The Vault Kubernetes authentication role defined a Kubernetes service account named `internal-app`.
+The Vault Kubernetes authentication role defined a Kubernetes service account named `internal-app-${INITIALS}`.
 
 A service account provides an identity for processes that run in a Pod. With this identity we will be able to run the application within the cluster.
 
@@ -281,9 +277,12 @@ A service account provides an identity for processes that run in a Pod. With thi
         vault-agent-injector   1         34m
         
     
-2.  Create a Kubernetes service account named `internal-app` in the `lab-security-${INITIALS}` namespace.
-    
-        $ kubectl create sa internal-app
+2.  Create a Kubernetes service account named `internal-app-${INITIALS}` in a new `lab-security-${INITIALS}` namespace.
+
+        $ export INITIALS=ns # CHANGEME
+        $ kubectl create namespace lab-security-${INITIALS}
+        $ kubectl config set-context --current --namespace lab-security-${INITIALS}
+        $ kubectl create sa internal-app-${INITIALS}
         
     
 3.  Verify that the service account has been created.
@@ -291,12 +290,12 @@ A service account provides an identity for processes that run in a Pod. With thi
         $ kubectl get serviceaccounts
         NAME                   SECRETS   AGE
         lab-security-ns        1         52m
-        internal-app           1         13s
+        internal-app-ns        1         13s
         vault                  1         43m
         vault-agent-injector   1         43m
         
     
-    The name of the service account here aligns with the name assigned to the `bound_service_account_names` field when the `internal-app` role was created.
+    The name of the service account here aligns with the name assigned to the `bound_service_account_names` field when the `internal-app-${INITIALS}` role was created.
     
 
 You have created a sample application, published it to DockerHub, and created a Kubernetes deployment that launches this application.
@@ -333,7 +332,7 @@ You have created a sample application, published it to DockerHub, and created a 
     
 2.  Apply the deployment defined in `deployment-orgchart.yaml`.
     
-        $ kubectl apply --filename deployment-orgchart.yaml
+        $ cat deployment-orgchart.yaml | sed s/internal-app/internal-app-${INITIALS}/g | kubectl apply -f -
         deployment.apps/orgchart created
         
     
@@ -396,8 +395,9 @@ The deployment is running the pod with the `internal-app` Kubernetes service acc
     *   [`role`](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#role) is the Vault Kubernetes authentication role
     *   [`agent-inject-secret-FILEPATH`](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#agent-inject-secret-filepath) prefixes the path of the file, `database-config.txt` written to the `/vault/secrets` directory. The value is the path to the secret defined in Vault.
 2.  Patch the `orgchart` deployment defined in `patch-inject-secrets.yaml`.
-    
-        $ kubectl patch deployment orgchart --patch "$(cat patch-inject-secrets.yaml)"
+
+        $ kubectl patch deployment orgchart --patch \
+            "$(cat patch-inject-secrets.yaml  | sed s/internal-app/internal-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g)"
         deployment.apps/orgchart patched
         
     
@@ -408,9 +408,6 @@ The deployment is running the pod with the `internal-app` Kubernetes service acc
         $ kubectl get pods
         NAME                                    READY   STATUS     RESTARTS   AGE
         orgchart-599cb74d9c-s8hhm               0/2     Init:0/1   0          23s
-        orgchart-69697d9598-l878s               1/1     Running    0          20m
-        vault-0                                 1/1     Running    0          78m
-        vault-agent-injector-5945fb98b5-tpglz   1/1     Running    0          78m
         
     
     Wait until the re-deployed `orgchart` pod reports that it is [`Running`](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase) and ready (`2/2`).
@@ -472,7 +469,8 @@ The structure of the injected secrets may need to be structured in a way for an 
     
 2.  Apply the updated annotations.
     
-        $ kubectl patch deployment orgchart --patch "$(cat patch-inject-secrets-as-template.yaml)"
+        $ kubectl patch deployment orgchart --patch \
+            "$(cat patch-inject-secrets-as-template.yaml | sed s/internal-app/internal-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g)"
         deployment.apps/exampleapp patched
         
     
@@ -481,8 +479,6 @@ The structure of the injected secrets may need to be structured in a way for an 
         $ kubectl get pods
         NAME                                    READY   STATUS    RESTARTS   AGE
         orgchart-554db4579d-w6565               2/2     Running   0          16s
-        vault-0                                 1/1     Running   0          126m
-        vault-agent-injector-5945fb98b5-tpglz   1/1     Running   0          126m
         
     
     Wait until the re-deployed `orgchart` pod reports that it is [`Running`](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase) and ready (`2/2`).
@@ -527,7 +523,7 @@ The annotations may patch these secrets into any deployment. Pods require that t
     
 2.  Apply the pod defined in `pod-payroll.yaml`.
     
-        $ kubectl apply --filename pod-payroll.yaml
+        $ cat pod-payroll.yaml | sed s/internal-app/internal-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g | kubectl apply -f -
         pod/payroll created
         
     
@@ -537,8 +533,6 @@ The annotations may patch these secrets into any deployment. Pods require that t
         NAME                                    READY   STATUS    RESTARTS   AGE
         orgchart-554db4579d-w6565               2/2     Running   0          29m
         payroll                                 2/2     Running   0          12s
-        vault-0                                 1/1     Running   0          155m
-        vault-agent-injector-5945fb98b5-tpglz   1/1     Running   0          155m
         
     
     Wait until the `payroll` pod reports that it is [`Running`](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase) and ready (`2/2`).
@@ -612,8 +606,6 @@ Pods run with a Kubernetes service account other than the ones defined in the Va
         NAME                                    READY   STATUS     RESTARTS   AGE
         orgchart-554db4579d-w6565               2/2     Running    0          29m
         payroll                                 2/2     Running    0          12s
-        vault-0                                 1/1     Running    0          155m
-        vault-agent-injector-5945fb98b5-tpglz   1/1     Running    0          155m
         website-7fc8b69645-527rf                0/2     Init:0/1   0          76s
         
     
@@ -652,7 +644,8 @@ Pods run with a Kubernetes service account other than the ones defined in the Va
     
 6.  Patch the `website` deployment defined in `patch-website.yaml`.
     
-        $ kubectl patch deployment website --patch "$(cat patch-website.yaml)"
+        $ kubectl patch deployment website --patch \
+            "$(cat patch-website.yaml | sed s/internal-app/internal-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g)"
         
     
 7.  Get all the pods in the `lab-security-${INITIALS}` namespace.
@@ -661,8 +654,6 @@ Pods run with a Kubernetes service account other than the ones defined in the Va
         NAME                                    READY   STATUS     RESTARTS   AGE
         orgchart-554db4579d-w6565               2/2     Running    0          29m
         payroll                                 2/2     Running    0          12s
-        vault-0                                 1/1     Running    0          155m
-        vault-agent-injector-5945fb98b5-tpglz   1/1     Running    0          155m
         website-788d689b87-tll2r                2/2     Running    0          27s
         
     
@@ -696,10 +687,10 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
         Context "..." modified.
         
     
-3.  Create a Kubernetes service account named `internal-app` in the `lab-security-offsite-${INITIALS}` namespace.
+3.  Create a Kubernetes service account named `internal-app-${INITIALS}` in the `lab-security-offsite-${INITIALS}` namespace.
     
-        $ kubectl create sa internal-app
-        serviceaccount/internal-app created
+        $ kubectl create sa internal-app-${INITIALS}
+        serviceaccount/internal-app-${INITIALS} created
         
     
 4.  Display the deployment for the `issues` application.
@@ -739,7 +730,10 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
     
 5.  Apply the deployment defined in `deployment-issues.yaml`.
     
-        $ kubectl apply --filename deployment-issues.yaml
+        $ cat deployment-issues.yaml | \
+            sed s/internal-app/internal-app-${INITIALS}/g | \
+            sed s#database/config#database/config-${INITIALS}#g | \
+            kubectl apply -f -
         deployment.apps/issues created
         
     
@@ -780,7 +774,7 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
 8.  Start an interactive shell session on the `vault-0` pod in the `lab-security-${INITIALS}` namespace.
     
     ```
-    $ kubectl exec --namespace `lab-security-${INITIALS}` -it vault-0 -- /bin/sh
+    $ kubectl exec --namespace lab-security -it vault-0 -- /bin/sh
     / $
     ```
     
@@ -790,10 +784,10 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
     
     ```sh
     $ export INITIALS=ns # CHANGEME
-    $ vault write auth/kubernetes/role/offsite-app \
-        bound_service_account_names=internal-app \
+    $ vault write auth/kubernetes/role/offsite-app-${INITIALS} \
+        bound_service_account_names=internal-app-${INITIALS} \
         bound_service_account_namespaces=lab-security-offsite-${INITIALS} \
-        policies=internal-app \
+        policies=internal-app-${INITIALS} \
         ttl=24h
     ```
         
@@ -822,12 +816,13 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
                 {{- end -}}
     ```
 
-    The patch performs an update to set the `vault.hashicorp.com/role` to the Vault Kubernetes role `offsite-app`.
+    The patch performs an update to set the `vault.hashicorp.com/role` to the Vault Kubernetes role `offsite-app-${INITIALS}`.
     
 12.  Patch the `issues` deployment defined in `patch-issues.yaml`.
    
     ```sh
-    $ kubectl patch deployment issues --patch "$(cat patch-issues.yaml)"
+    $ kubectl patch deployment issues --patch \
+        "$(cat patch-issues.yaml | sed s/offsite-app/offsite-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g)"
     deployment.apps/issues patched
     ```
 

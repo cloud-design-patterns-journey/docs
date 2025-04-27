@@ -1,5 +1,7 @@
 # Guided Exercise: Define and Apply Permissions with RBAC
 
+~30 min
+
 Define role-based access controls and apply permissions to users.
 
 ## Outcomes
