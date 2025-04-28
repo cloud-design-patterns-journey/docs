@@ -2,6 +2,8 @@
 
 ~30 min
 
+## Introduction
+
 Deploying applications that act as secret consumers of Vault require the application to:
 
 *   Authenticate and acquire a client token.
@@ -21,6 +23,22 @@ This is beneficial because:
 
 In this tutorial, you setup Vault and this injector service with the Vault Helm chart. Then you will deploy several applications to demonstrate how this new injector service retrieves and writes these secrets for the applications to use.
 
+## Content
+
+- [Injecting secrets into Kubernetes pods via Vault Agent](#injecting-secrets-into-kubernetes-pods-via-vault-agent)
+  - [Introduction](#introduction)
+  - [Content](#content)
+  - [Prerequisites](#prerequisites)
+    - [Install kubectl and helm CLIs](#install-kubectl-and-helm-clis)
+  - [Step 1: Get lab resources](#step-1-get-lab-resources)
+  - [Step 2: Installing HashiCorp Vault](#step-2-installing-hashicorp-vault)
+  - [Step 3: Setting up Vault for secret injection](#step-3-setting-up-vault-for-secret-injection)
+  - [Step 4: Injecting secrets into an app](#step-4-injecting-secrets-into-an-app)
+  - [Step 5: Understanding scopes](#step-5-understanding-scopes)
+  - [Conclusion](#conclusion)
+
+## Prerequisites
+
 This tutorial requires:
 
 *   [Docker](https://www.docker.com/products/docker-desktop/)
@@ -30,7 +48,7 @@ This tutorial requires:
 *   Kubernetes/OpenShift cluster accessible.
     *   **Note**: you can run this lab locally using [Minikube](https://minikube.sigs.k8s.io/docs/start).
 
-#### [](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#install-kubectl-and-helm-clis)Install kubectl and helm CLIs
+### Install kubectl and helm CLIs
 
 Install `kubectl` with [Homebrew](https://brew.sh/) (Linux/Macos).
 
@@ -44,23 +62,7 @@ Install `helm` with Homebrew.
 brew install helm
 ```
 
-This tutorial was last tested 21 May 2023 on a macOS 13.3.1 using the following software versions.
-
-    $ docker version
-    Client:
-    Cloud integration: v1.0.25
-    Version:           20.10.16
-    ## ...
-    
-
-    $ helm version
-    version.BuildInfo{Version:"v3.12.0", GitCommit:"c9f554d75773799f72ceef38c51210f1842a1dea", GitTreeState:"clean", GoVersion:"go1.20.4"}
-    
-
-    $ kubectl version --short
-    Client Version: v1.27.1
-    Kustomize Version: v5.0.1
-    Server Version: v1.26.3
+## Step 1: Get lab resources
     
 1.  Retrieve the web application and additional configuration by cloning the [hashicorp-education/learn-vault-kubernetes-sidecar](https://github.com/hashicorp-education/learn-vault-kubernetes-sidecar) repository from GitHub.
     
@@ -72,6 +74,8 @@ This tutorial was last tested 21 May 2023 on a macOS 13.3.1 using the following 
         $ cd learn-vault-kubernetes-sidecar
             
     This tutorial assumes that the following commands are executed in this directory.
+
+## Step 2: Installing HashiCorp Vault
 
 The recommended way to run Vault on Kubernetes is via the [Helm chart](https://developer.hashicorp.com/vault/docs/platform/k8s/helm). [Helm](https://helm.sh/docs/helm/) is a package manager that installs and configures all the necessary components to run Vault in several different modes. A Helm chart includes [templates](https://helm.sh/docs/chart_template_guide) that enable conditional and parameterized execution. These parameters can be set through command-line arguments or defined in YAML.
 
@@ -148,16 +152,17 @@ The recommended way to run Vault on Kubernetes is via the [Helm chart](https://d
     Running a Vault server in development is automatically initialized and unsealed. This is ideal in a learning environment but NOT recommended for a production environment.
     
     Wait until the `vault-0` pod and `vault-agent-injector` pod are running and ready (`1/1`).
-    
+
+## Step 3: Setting up Vault for secret injection
 
 The applications that you deploy in the [Inject secrets into the pod](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#inject-secrets-into-the-pod) section expect Vault to store a username and password stored at the path `internal/database/config`. To create this secret requires that a [key-value secret engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2) is enabled and a username and password is put at the specified path.
 
 1.  Start an interactive shell session on the `vault-0` pod.
     
+        $ kubectl config set-context --current --namespace lab-security
         $ kubectl exec -it vault-0 -- /bin/sh
         / $
         
-    
     Your system prompt is replaced with a new prompt `/ $`. Commands issued at this prompt are executed on the `vault-0` container.
     
 2.  If not already enabled, enable kv-v2 secrets at the path `internal` (expect an error if already enabled).
@@ -262,7 +267,8 @@ Vault provides a [Kubernetes authentication](https://developer.hashicorp.com/vau
     The role connects the Kubernetes service account, `internal-app-${INITIALS}`, and namespace, `lab-security-${INITIALS}`, with the Vault policy, `internal-app-${INITIALS}`. The tokens returned after authentication are valid for 24 hours.
     
 5.  Lastly, exit the `vault-0` pod.
-    
+
+## Step 4: Injecting secrets into an app
 
 The Vault Kubernetes authentication role defined a Kubernetes service account named `internal-app-${INITIALS}`.
 
@@ -341,8 +347,6 @@ You have created a sample application, published it to DockerHub, and created a 
         $ kubectl get pods
         NAME                                    READY   STATUS    RESTARTS   AGE
         orgchart-69697d9598-l878s               1/1     Running   0          18s
-        vault-0                                 1/1     Running   0          58m
-        vault-agent-injector-5945fb98b5-tpglz   1/1     Running   0          58m
         
     
     The orgchart pod is displayed here as the pod prefixed with `orgchart`.
@@ -492,9 +496,7 @@ The structure of the injected secrets may need to be structured in a way for an 
     
     The secrets are rendered in a PostgreSQL connection string is present on the container:
     
-        postgresql://db-readonly-user:db-secret-password@postgres:5432/wizard
-        
-    
+        postgresql://db-readonly-user:db-secret-password@postgres:5432/wizard 
 
 The annotations may patch these secrets into any deployment. Pods require that the annotations be included in their initial definition.
 
@@ -548,7 +550,7 @@ The annotations may patch these secrets into any deployment. Pods require that t
     
         postgresql://db-readonly-user:db-secret-password@postgres:5432/wizard
         
-    
+## Step 5: Understanding scopes
 
 Pods run with a Kubernetes service account other than the ones defined in the Vault Kubernetes authentication role are **NOT** able to access the secrets defined at that path.
 
@@ -852,7 +854,9 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
     postgresql://db-readonly-user:db-secret-password@postgres:5432/wizard
     ```
 
-You launched Vault and the injector service with the Vault Helm chart. Learn more about the Vault Helm chart by reading the [documentation](https://developer.hashicorp.com/vault/docs/platform/k8s), exploring the [project source code](https://github.com/hashicorp/vault-helm), reading the blog post announcing the ["Injecting Vault Secrets into Kubernetes Pods via a Sidecar"](https://www.hashicorp.com/blog/injecting-vault-secrets-into-kubernetes-pods-via-a-sidecar), or the documentation for [Agent Sidecar Injector](https://developer.hashicorp.com/vault/docs/platform/k8s/injector)
+## Conclusion
+
+Congrats, you have completed the lab! You launched Vault and the injector service with the Vault Helm chart. Learn more about the Vault Helm chart by reading the [documentation](https://developer.hashicorp.com/vault/docs/platform/k8s), exploring the [project source code](https://github.com/hashicorp/vault-helm), reading the blog post announcing the ["Injecting Vault Secrets into Kubernetes Pods via a Sidecar"](https://www.hashicorp.com/blog/injecting-vault-secrets-into-kubernetes-pods-via-a-sidecar), or the documentation for [Agent Sidecar Injector](https://developer.hashicorp.com/vault/docs/platform/k8s/injector)
 
 Then you deployed several applications to demonstrate how this new injector service retrieves and writes these secrets for the applications to use. Explore how pods can retrieve them [directly via network requests](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-minikube-consul) or secrets [mounted on ephemeral volumes](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-secret-store-driver).
 

@@ -92,7 +92,7 @@ Define role-based access controls and apply permissions to users.
         NAME      ROLE      AGE      USERS      GROUPS      SERVICEACCOUNTS
         ```
         
-    5.  Log in as the `leader-${SUFFIX}` user with the `redhat` password.
+    5.  Log in as the `leader-${SUFFIX}` user with the `redhat` password .
         
         ```sh
         export SUFFIX=${OCP_USER} # e.g. team1
