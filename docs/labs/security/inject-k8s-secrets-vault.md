@@ -123,7 +123,7 @@ The recommended way to run Vault on Kubernetes is via the [Helm chart](https://d
     EOF
     ```
 
-4.  Create a new `lab-security` namespace (suffixed with your initials):
+4.  Create a new `lab-security` namespace:
     ```sh
     $ kubectl create namespace lab-security
     $ kubectl config set-context --current --namespace lab-security
@@ -273,17 +273,9 @@ Vault provides a [Kubernetes authentication](https://developer.hashicorp.com/vau
 The Vault Kubernetes authentication role defined a Kubernetes service account named `internal-app-${INITIALS}`.
 
 A service account provides an identity for processes that run in a Pod. With this identity we will be able to run the application within the cluster.
-
-1.  Get all the service accounts in the lab-security-${INITIALS} namespace.
-    
-        $ kubectl get serviceaccounts
-        NAME                   SECRETS   AGE
-        lab-security-ns                1         43m
-        vault                  1         34m
-        vault-agent-injector   1         34m
         
     
-2.  Create a Kubernetes service account named `internal-app-${INITIALS}` in a new `lab-security-${INITIALS}` namespace.
+1.  Create a Kubernetes service account named `internal-app-${INITIALS}` in a new `lab-security-${INITIALS}` namespace.
 
         $ export INITIALS=ns # CHANGEME
         $ kubectl create namespace lab-security-${INITIALS}
@@ -291,7 +283,7 @@ A service account provides an identity for processes that run in a Pod. With thi
         $ kubectl create sa internal-app-${INITIALS}
         
     
-3.  Verify that the service account has been created.
+2.  Get all the service accounts in the lab-security-${INITIALS} namespace. Verify that the service account has been created.
     
         $ kubectl get serviceaccounts
         NAME                   SECRETS   AGE
