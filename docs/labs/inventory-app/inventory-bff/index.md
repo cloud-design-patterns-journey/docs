@@ -79,23 +79,10 @@ The Inventory solution will use [GraphQL](https://graphql.org/) for its BFF laye
       ...
       ```
 
-### Choose your development environment
+### Setup your development environment
 
-=== "Gitpod"
-    - Head over to [gitpod.io](https://gitpod.io), login with your github account by clicking **Continue with GitHub**.
-      
-    - Grant access to gitpod to your GitHub organization by going to account settings on the top right corner, navigate to **Integrations**, go to GitHub and click **Manage on GitHub**.
-      
-    - On GitHub, search the organization you have used to create the repository and click **grant** to allow gitpod to access repositories in that organization.
-      
-    - Back to [gitpod.io](https://gitpod.io/workspaces), navigate to workspaces and click **New Workspace** to create a new workspace, give it your newly created repository URL.
-
-    - If it is your first gitpod workspace, it will ask you for your preferred editor, pick the in browser Visual Studio Code, and the workspace will be created automatically for you.
-
-=== "Locally"
-    Clone the project and open it using your favorite text editor or IDE (Visual Studio Code, Atom...).
-    
-You are now ready to modify the application!
+1. Clone the project and open it using your favorite text editor or IDE (Visual Studio Code, Atom...).
+2. You are now ready to modify the application!
 
 ## Create the REST interface
 
@@ -179,15 +166,9 @@ by a component and provide a good way to load the modules that will be injected 
     npm start
     ```
 
-- Access the running service. This service runs on port `3000`:
+- Open a browser to `http://localhost:3000` to see the app
 
-=== "Gitpod"
-    - Once you run the application, Gitpod gives the option to make the port **Public**, in the bottom-right corner.Once you make the port Public, it gives you the option to **Open Preview** or **Open Browser**.
-
-=== "Desktop/Laptop" 
-    - Open a browser to `http://localhost:3000` to see the app
-
-    - Expand our service from the list, click `Try it out`, then click `Execute`
+- Expand our service from the list, click `Try it out`, then click `Execute`
 
 - Push the changes we've made to the repository:
     ```bash
@@ -422,13 +403,9 @@ into javascript and to put the business logic in a separate service component.
 
 - Access the running service. This service runs on port `3000`:
 
-=== "Gitpod"
-    - Once you run the application, Gitpod gives the option to make the port **Public**, in the bottom-right corner.Once you make the port Public, it gives you the option to **Open Preview** or **Open Browser**.
+- Open a browser to `http://localhost:3000` to see the app
 
-=== "Desktop/Laptop" 
-    - Open a browser to `http://localhost:3000` to see the app
-
-    - Expand our service from the list, click `Try it out`, then click `Execute`
+- Expand our service from the list, click `Try it out`, then click `Execute`
 
 - Push the changes we've made to the repository:
     ```bash
@@ -487,12 +464,8 @@ for GraphQL.
 
 - Verify that the that the resolver is available using the Graph QL browser provided by the template:
 
-=== "Gitpod"
-    - Once you run the application, Gitpod gives the option to make the port **Public**, in the bottom-right corner.Once you make the port Public, it gives you the option to **Open Preview** or **Open Browser**.
-
-=== "Desktop/Laptop" 
-    - In your Browser, open GraphQL playground: `http://localhost:3000/graphql`
-    - Run the query `query { stockItems { name } }`
+- In your Browser, open GraphQL playground: `http://localhost:3000/graphql`
+- Run the query `query { stockItems { name } }`
 
 - Push the changes we've made to the repository:
     ```bash

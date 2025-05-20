@@ -71,21 +71,9 @@
       ...
       ```
 
-### Choose your development environment
+### Setup your development environment
 
-=== "Gitpod"
-    - Head over to [gitpod.io](https://gitpod.io), login with your github account by clicking **Continue with GitHub**.
-      
-    - Grant access to gitpod to your GitHub organization by going to account settings on the top right corner, navigate to **Integrations**, go to GitHub and click **Manage on GitHub**.
-      
-    - On GitHub, search the organization you have used to create the repository and click **grant** to allow gitpod to access repositories in that organization.
-      
-    - Back to [gitpod.io](https://gitpod.io/workspaces), navigate to workspaces and click **New Workspace** to create a new workspace, give it your newly created repository URL.
-
-    - If it is your first gitpod workspace, it will ask you for your preferred editor, pick the in browser Visual Studio Code, and the workspace will be created automatically for you.
-
-=== "Locally"
-    Clone the project and open it using your favorite text editor or IDE (Visual Studio Code, Atom...).
+Clone the project and open it using your favorite text editor or IDE (Visual Studio Code, Atom...).
     
 You are now ready to modify the application!
 
