@@ -93,6 +93,7 @@ Since we will be developing this microservice following the [Test Driven Develop
 
 - Start the tests by running the following command in a new terminal that you will keep running while running the lab:
     ```bash
+    npm i
     npm run tdd
     ```
 
