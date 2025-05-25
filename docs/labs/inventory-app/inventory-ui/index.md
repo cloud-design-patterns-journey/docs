@@ -353,7 +353,7 @@ Now that we have a mock service that injects data, we can build an implementatio
         res.json({ status: 'UP' });
     });
 
-    app.get('/*', function (req, res) {
+    app.get('/*wildcard', function (req, res) {
         res.sendFile(path.join(__dirname, '../build', 'index.html'));
     });
 
