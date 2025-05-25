@@ -167,9 +167,7 @@ by a component and provide a good way to load the modules that will be injected 
     npm start
     ```
 
-- Open a browser to `http://localhost:3000` to see the app
-
-- Expand our service from the list, click `Try it out`, then click `Execute`
+- Open a browser to `http://localhost:3000/stock-items` to see the app
 
 - Push the changes we've made to the repository:
     ```bash
@@ -404,9 +402,7 @@ into javascript and to put the business logic in a separate service component.
 
 - Access the running service. This service runs on port `3000`:
 
-- Open a browser to `http://localhost:3000` to see the app
-
-- Expand our service from the list, click `Try it out`, then click `Execute`
+- Open a browser to `http://localhost:3000/stock-items` to see the app
 
 - Push the changes we've made to the repository:
     ```bash

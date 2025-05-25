@@ -84,6 +84,7 @@ Based on the requirements of this first use case, we will create a `StockItemLis
 - Open a terminal and start the application in development mode to see the initial UI and the changes as we make them:
 
     ```shell
+    yarn install
     yarn start:dev
     ```
 
@@ -253,75 +254,6 @@ Now that we've created the initial components, we can start to customize the `St
     }
     ```
 
-- Update the components to pass the service in the properties:
-
-    ```javascript title="src/App.test.jsx"
-    import { render, screen } from '@testing-library/react';
-    import App from './App';
-    import {StockItemMockService} from "./services/stock-item-mock.service";
-
-    describe('App', () => {
-      test('canary verifies test infrastructure', () => {
-        expect(true).toEqual(true);
-      });
-
-      test('renders text', () => {
-        Object.defineProperty(window, "matchMedia", {
-          writable: true,
-          value: jest.fn().mockImplementation(query => ({
-            matches: false,
-            media: query,
-            onchange: null,
-            addListener: jest.fn(), // Deprecated
-            removeListener: jest.fn(), // Deprecated
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
-            dispatchEvent: jest.fn(),
-          }))
-        });
-        render(<App stockService={new StockItemMockService()}/>);
-        const linkElement = screen.getByText(/Design & build with Carbon/i);
-        expect(linkElement).toBeInTheDocument();
-      });
-
-    });
-    ```
-
-    ```javascript title="src/App.jsx"
-    import React, { Component } from 'react';
-    import UIShell from './content/UIShell/UIShell';
-    import './App.scss';
-    import { StockItemMockService } from "./services/stock-item-mock.service";
-
-    class App extends Component {
-      constructor(props) {
-        super(props);
-
-        this.stockService = props.stockService || new StockItemMockService();
-      }
-
-      render() {
-        return (
-          <div className="app">
-            <UIShell stockService={this.stockService} />
-          </div>
-        );
-      }
-    }
-
-    export default App;
-    ```
-
-    ```javascript title="src/content/UIShell/UIShell.jsx"
-    ...
-    <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/inventory/items" element={<StockItemList stockService={this.props.stockService} />} />
-        <Route path="*" element={<NotFound />} />
-    </Routes>
-    ...
-    ```
-
 - Update `StockItemList.jsx` to use the provided service:
 
     ```javascript title="src/content/StockItemList.jsx"
@@ -333,7 +265,10 @@ Now that we've created the initial components, we can start to customize the `St
     } from '@carbon/react';
 
     export default function StockItemList(props) {
-        const { isLoading, error, data } = useQuery(['stock-items'], props.stockService.listStockItems);
+        const { isLoading, error, data } = useQuery({
+            queryKey: ['stock-items'],
+            queryFn: props.stockService.listStockItems
+        });
 
         return (
             <div className='stock-items-list'>
@@ -342,27 +277,27 @@ Now that we've created the initial components, we can start to customize the `St
                     <StructuredListSkeleton />
                     : error ?
                         'Error retrieving stock items'
-                    :
-                    <StructuredListWrapper>
-                    <StructuredListHead>
-                        <StructuredListRow head>
-                            <StructuredListCell head>Name</StructuredListCell>
-                            <StructuredListCell head>Stock</StructuredListCell>
-                            <StructuredListCell head>Unit Price</StructuredListCell>
-                            <StructuredListCell head>Manufacturer</StructuredListCell>
-                        </StructuredListRow>
-                    </StructuredListHead>
-                    <StructuredListBody>
-                        {data.map(item => (
-                            <StructuredListRow key={item.id}>
-                                <StructuredListCell noWrap>{item.name}</StructuredListCell>
-                                <StructuredListCell noWrap>{item.stock}</StructuredListCell>
-                                <StructuredListCell noWrap>{item.unitPrice}</StructuredListCell>
-                                <StructuredListCell noWrap>{item.manufacturer}</StructuredListCell>
-                            </StructuredListRow>
-                        ))}
-                    </StructuredListBody>
-                </StructuredListWrapper>}
+                        :
+                        <StructuredListWrapper>
+                            <StructuredListHead>
+                                <StructuredListRow head>
+                                    <StructuredListCell head>Name</StructuredListCell>
+                                    <StructuredListCell head>Stock</StructuredListCell>
+                                    <StructuredListCell head>Unit Price</StructuredListCell>
+                                    <StructuredListCell head>Manufacturer</StructuredListCell>
+                                </StructuredListRow>
+                            </StructuredListHead>
+                            <StructuredListBody>
+                                {data.map(item => (
+                                    <StructuredListRow key={item.id}>
+                                        <StructuredListCell noWrap>{item.name}</StructuredListCell>
+                                        <StructuredListCell noWrap>{item.stock}</StructuredListCell>
+                                        <StructuredListCell noWrap>{item.unitPrice}</StructuredListCell>
+                                        <StructuredListCell noWrap>{item.manufacturer}</StructuredListCell>
+                                    </StructuredListRow>
+                                ))}
+                            </StructuredListBody>
+                        </StructuredListWrapper>}
             </div>
         );
     }
@@ -404,27 +339,27 @@ Now that we have a mock service that injects data, we can build an implementatio
     app.use(express.static(path.join(__dirname, '../build')));
 
     app.use(
-    '/api',
-    createProxyMiddleware({
-        target: process.env.API_HOST ?? 'http://example.com',
-        changeOrigin: true,
-        pathRewrite: {
-        '^/api': '/'
-        },
-    })
+        '/api',
+        createProxyMiddleware({
+            target: process.env.API_HOST ?? 'http://example.com',
+            changeOrigin: true,
+            pathRewrite: {
+                '^/api': '/'
+            },
+        })
     );
 
     app.get('/health', function (req, res) {
-    res.json({ status: 'UP' });
+        res.json({ status: 'UP' });
     });
 
     app.get('/*', function (req, res) {
-    res.sendFile(path.join(__dirname, '../build', 'index.html'));
+        res.sendFile(path.join(__dirname, '../build', 'index.html'));
     });
 
     const port = process.env.PORT ?? 3000;
     app.listen(port, function () {
-    console.info(`Server listening on http://localhost:${port}`);
+        console.info(`Server listening on http://localhost:${port}`);
     });
     ```
 
