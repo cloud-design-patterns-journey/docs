@@ -11,6 +11,8 @@ nav:
       - Security:
         - Inject K8s secrets with Vault: labs/security/inject-k8s-secrets-vault.md
         - Optional - OpenShift RBAC: labs/security/openshift-rbac.md
+      - Generative AI:
+        - Streamline K8s Ops with GenIA: labs/genai/genai-ops-kubectl-ai.md
       - Inventory App:
           - Introduction: labs/inventory-app/inventory-application/index.md
           - Service: labs/inventory-app/inventory-service/index.md
