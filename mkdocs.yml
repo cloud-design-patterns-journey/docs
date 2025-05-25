@@ -16,6 +16,7 @@ nav:
           - Service: labs/inventory-app/inventory-service/index.md
           - BFF: labs/inventory-app/inventory-bff/index.md
           - UI: labs/inventory-app/inventory-ui/index.md
+          - Fast Track: labs/inventory-app/fast-track.md
           - Optional - MongoDB: labs/inventory-app/inventory-mongodb/index.md
           # - Optional - Auth with AppID: labs/inventory-app/inventory-appid/index.md
 theme:
