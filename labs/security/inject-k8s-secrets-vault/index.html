@@ -1,0 +1,1755 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Noe-Samaille">
+      
+      
+      
+        <link rel="prev" href="../../..">
+      
+      
+        <link rel="next" href="../openshift-rbac/">
+      
+      
+      <link rel="icon" href="../../../images/logo.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
+    
+    
+      
+        <title>Inject K8s secrets with Vault - Cloud Design Patterns - Learning Journey</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.7e359304.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../custom.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#injecting-secrets-into-kubernetes-pods-via-vault-agent" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Cloud Design Patterns - Learning Journey" class="md-header__button md-logo" aria-label="Cloud Design Patterns - Learning Journey" data-md-component="logo">
+      
+  <img src="../../../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Cloud Design Patterns - Learning Journey
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Inject K8s secrets with Vault
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/cloud-design-patterns-journey/docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    cloud-design-patterns-journey/docs
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+    
+  
+  Labs
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Cloud Design Patterns - Learning Journey" class="md-nav__button md-logo" aria-label="Cloud Design Patterns - Learning Journey" data-md-component="logo">
+      
+  <img src="../../../images/logo.png" alt="logo">
+
+    </a>
+    Cloud Design Patterns - Learning Journey
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/cloud-design-patterns-journey/docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    cloud-design-patterns-journey/docs
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Labs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Labs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Security
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            Security
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Inject K8s secrets with Vault
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Inject K8s secrets with Vault
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-kubectl-and-helm-clis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install kubectl and helm CLIs
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-get-lab-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1: Get lab resources
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-installing-hashicorp-vault" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2: Installing HashiCorp Vault
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-setting-up-vault-for-secret-injection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3: Setting up Vault for secret injection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-injecting-secrets-into-an-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 4: Injecting secrets into an app
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-understanding-scopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 5: Understanding scopes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conclusion
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../openshift-rbac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Optional - OpenShift RBAC
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../genai/genai-ops-kubectl-ai/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    Generative AI
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+      
+        
+          
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../inventory-app/inventory-application/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    Inventory App
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-kubectl-and-helm-clis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install kubectl and helm CLIs
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-get-lab-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1: Get lab resources
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-installing-hashicorp-vault" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2: Installing HashiCorp Vault
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-setting-up-vault-for-secret-injection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3: Setting up Vault for secret injection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-injecting-secrets-into-an-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 4: Injecting secrets into an app
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-understanding-scopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 5: Understanding scopes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conclusion
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/cloud-design-patterns-journey/docs/edit/main/docs/labs/security/inject-k8s-secrets-vault.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/cloud-design-patterns-journey/docs/raw/main/docs/labs/security/inject-k8s-secrets-vault.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
+    </a>
+  
+
+
+<h1 id="injecting-secrets-into-kubernetes-pods-via-vault-agent">Injecting secrets into Kubernetes pods via Vault Agent</h1>
+<p>~30 min</p>
+<h2 id="introduction">Introduction</h2>
+<p>Deploying applications that act as secret consumers of Vault require the application to:</p>
+<ul>
+<li>Authenticate and acquire a client token.</li>
+<li>Manage the lifecycle of the token.</li>
+<li>Retrieve secrets from Vault.</li>
+<li>Manage the leases of any dynamic secrets.</li>
+</ul>
+<p>Vault Agent takes responsibility for these tasks and enables your applications to remain unaware of Vault. However, this introduces a new requirement that deployments install and configure Vault Agent alongside the application as a sidecar.</p>
+<p>The Vault Helm chart enables you to run Vault and the Vault <a href="https://developer.hashicorp.com/vault/docs/platform/k8s/injector">Agent Sidecar Injector service</a>. This injector service leverages the <a href="https://medium.com/bb-tutorials-and-thoughts/kubernetes-learn-sidecar-container-pattern-6d8c21f873d">Sidecar container pattern</a> and Kubernetes <a href="https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#mutatingadmissionwebhook">mutating admission webhook</a> to intercept pods that define specific annotations and inject a Vault Agent container to manage these secrets.</p>
+<p>This is beneficial because:</p>
+<ul>
+<li>Applications remain Vault unaware as the secrets are stored on the file-system in their container.</li>
+<li>Existing deployments require no change; as annotations can be patched.</li>
+<li>Access to secrets can be enforced via Kubernetes service accounts and namespaces</li>
+</ul>
+<p>In this tutorial, you setup Vault and this injector service with the Vault Helm chart. Then you will deploy several applications to demonstrate how this new injector service retrieves and writes these secrets for the applications to use.</p>
+<h2 id="content">Content</h2>
+<ul>
+<li><a href="#injecting-secrets-into-kubernetes-pods-via-vault-agent">Injecting secrets into Kubernetes pods via Vault Agent</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#content">Content</a></li>
+<li><a href="#prerequisites">Prerequisites</a><ul>
+<li><a href="#install-kubectl-and-helm-clis">Install kubectl and helm CLIs</a></li>
+</ul>
+</li>
+<li><a href="#step-1-get-lab-resources">Step 1: Get lab resources</a></li>
+<li><a href="#step-2-installing-hashicorp-vault">Step 2: Installing HashiCorp Vault</a></li>
+<li><a href="#step-3-setting-up-vault-for-secret-injection">Step 3: Setting up Vault for secret injection</a></li>
+<li><a href="#step-4-injecting-secrets-into-an-app">Step 4: Injecting secrets into an app</a></li>
+<li><a href="#step-5-understanding-scopes">Step 5: Understanding scopes</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>This tutorial requires:</p>
+<ul>
+<li><a href="https://www.docker.com/products/docker-desktop/">Docker</a></li>
+<li><a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">Kubernetes command-line interface (CLI)</a><ul>
+<li><strong>Note</strong>: if running on OpenShift, <code>oc</code> CLI can be used, it can be installed through the help section of your OpenShift console.</li>
+</ul>
+</li>
+<li><a href="https://helm.sh/docs/intro/install/">Helm CLI</a></li>
+<li>Kubernetes/OpenShift cluster accessible.<ul>
+<li><strong>Note</strong>: you can run this lab locally using <a href="https://minikube.sigs.k8s.io/docs/start">Minikube</a>.</li>
+</ul>
+</li>
+</ul>
+<h3 id="install-kubectl-and-helm-clis">Install kubectl and helm CLIs</h3>
+<p>Install <code>kubectl</code> with <a href="https://brew.sh/">Homebrew</a> (Linux/Macos).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>brew<span class="w"> </span>install<span class="w"> </span>kubernetes-cli
+</code></pre></div>
+<p>Install <code>helm</code> with Homebrew.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>brew<span class="w"> </span>install<span class="w"> </span>helm
+</code></pre></div>
+<h2 id="step-1-get-lab-resources">Step 1: Get lab resources</h2>
+<ol>
+<li>
+<p>Retrieve the web application and additional configuration by cloning the <a href="https://github.com/hashicorp-education/learn-vault-kubernetes-sidecar">hashicorp-education/learn-vault-kubernetes-sidecar</a> repository from GitHub.</p>
+<div class="highlight"><pre><span></span><code>$ git clone https://github.com/hashicorp-education/learn-vault-kubernetes-sidecar.git
+</code></pre></div>
+</li>
+<li>
+<p>Move into the clones repository.</p>
+<div class="highlight"><pre><span></span><code>$ cd learn-vault-kubernetes-sidecar
+</code></pre></div>
+<p>This tutorial assumes that the following commands are executed in this directory.</p>
+</li>
+</ol>
+<h2 id="step-2-installing-hashicorp-vault">Step 2: Installing HashiCorp Vault</h2>
+<p>The recommended way to run Vault on Kubernetes is via the <a href="https://developer.hashicorp.com/vault/docs/platform/k8s/helm">Helm chart</a>. <a href="https://helm.sh/docs/helm/">Helm</a> is a package manager that installs and configures all the necessary components to run Vault in several different modes. A Helm chart includes <a href="https://helm.sh/docs/chart_template_guide">templates</a> that enable conditional and parameterized execution. These parameters can be set through command-line arguments or defined in YAML.</p>
+<ol>
+<li>
+<p>Add the HashiCorp Helm repository.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>hashicorp<span class="w"> </span>https://helm.releases.hashicorp.com
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="s2">&quot;hashicorp&quot;</span><span class="w"> </span>has<span class="w"> </span>been<span class="w"> </span>added<span class="w"> </span>to<span class="w"> </span>your<span class="w"> </span>repositories
+</code></pre></div>
+</li>
+<li>
+<p>Update all the repositories to ensure <code>helm</code> is aware of the latest versions.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Hang<span class="w"> </span>tight<span class="w"> </span><span class="k">while</span><span class="w"> </span>we<span class="w"> </span>grab<span class="w"> </span>the<span class="w"> </span>latest<span class="w"> </span>from<span class="w"> </span>your<span class="w"> </span>chart<span class="w"> </span>repositories...
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>...Successfully<span class="w"> </span>got<span class="w"> </span>an<span class="w"> </span>update<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span><span class="s2">&quot;hashicorp&quot;</span><span class="w"> </span>chart<span class="w"> </span>repository
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Update<span class="w"> </span>Complete.<span class="w"> </span>⎈Happy<span class="w"> </span>Helming!⎈
+</code></pre></div>
+</li>
+<li>
+<p><em>Optional</em>: if running on OpenShift, create a <code>vault-ocp.values.yaml</code> file with required configuration for OpenShift (security context constraints):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="l l-Scalar l-Scalar-Plain">cat &lt;&lt;EOF &gt; vault-ocp.values.yaml</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="l l-Scalar l-Scalar-Plain">global</span><span class="p p-Indicator">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">   </span><span class="nt">openshift</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nt">injector</span><span class="p">:</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">   </span><span class="nt">image</span><span class="p">:</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;registry.connect.redhat.com/hashicorp/vault-k8s&quot;</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.4.1-ubi&quot;</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="nt">agentImage</span><span class="p">:</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">   </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;registry.connect.redhat.com/hashicorp/vault&quot;</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">   </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.16.1-ubi&quot;</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="nt">server</span><span class="p">:</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">   </span><span class="nt">image</span><span class="p">:</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">      </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;registry.connect.redhat.com/hashicorp/vault&quot;</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">      </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.16.1-ubi&quot;</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="nt">readinessProbe</span><span class="p">:</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">   </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/v1/sys/health?uninitcode=204&quot;</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="l l-Scalar l-Scalar-Plain">EOF</span>
+</code></pre></div>
+</li>
+<li>
+<p>Create a new <code>lab-security</code> namespace:
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>lab-security
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>$<span class="w"> </span>kubectl<span class="w"> </span>config<span class="w"> </span>set-context<span class="w"> </span>--current<span class="w"> </span>--namespace<span class="w"> </span>lab-security
+</code></pre></div></p>
+</li>
+<li>
+<p>Install the latest version of the Vault server running in development mode. If running on OpenShift add <code>-f vault-ocp.values.yaml</code> to use additional configuration:</p>
+<div class="highlight"><pre><span></span><code>$ helm install vault hashicorp/vault --set &quot;server.dev.enabled=true&quot; [-f vault-ocp.values.yaml]
+NAME: vault
+## ...
+</code></pre></div>
+<p>The Vault pod and Vault Agent Injector pod are deployed in the <code>lab-security</code> namespace.</p>
+</li>
+<li>
+<p>Display all the pods in the <code>lab-security</code> namespace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pods
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>NAME<span class="w">                                    </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>vault-0<span class="w">                                 </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>80s
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>vault-agent-injector-5945fb98b5-tpglz<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>80s
+</code></pre></div>
+<p>The <code>vault-0</code> pod runs a Vault server in development mode. The <code>vault-agent-injector</code> pod performs the injection based on the annotations present or patched on a deployment.</p>
+<p>Development mode</p>
+<p>Running a Vault server in development is automatically initialized and unsealed. This is ideal in a learning environment but NOT recommended for a production environment.</p>
+<p>Wait until the <code>vault-0</code> pod and <code>vault-agent-injector</code> pod are running and ready (<code>1/1</code>).</p>
+</li>
+</ol>
+<h2 id="step-3-setting-up-vault-for-secret-injection">Step 3: Setting up Vault for secret injection</h2>
+<p>The applications that you deploy in the <a href="https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#inject-secrets-into-the-pod">Inject secrets into the pod</a> section expect Vault to store a username and password stored at the path <code>internal/database/config</code>. To create this secret requires that a <a href="https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2">key-value secret engine</a> is enabled and a username and password is put at the specified path.</p>
+<ol>
+<li>
+<p>Start an interactive shell session on the <code>vault-0</code> pod.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl config set-context --current --namespace lab-security
+$ kubectl exec -it vault-0 -- /bin/sh
+/ $
+</code></pre></div>
+<p>Your system prompt is replaced with a new prompt <code>/ $</code>. Commands issued at this prompt are executed on the <code>vault-0</code> container.</p>
+</li>
+<li>
+<p>If not already enabled, enable kv-v2 secrets at the path <code>internal</code> (expect an error if already enabled).</p>
+<div class="highlight"><pre><span></span><code>$ vault secrets enable -path=internal kv-v2
+Success! Enabled the kv-v2 secrets engine at: internal/
+</code></pre></div>
+<p>Learn more</p>
+<p>This tutorial focuses on Vault's integration with Kubernetes and not interacting the key-value secrets engine. For more information refer to the <a href="https://developer.hashicorp.com/vault/tutorials/secrets-management/static-secrets">Static Secrets: Key/Value Secret</a> tutorial.</p>
+</li>
+<li>
+<p>Create a secret at path <code>internal/database/config-${INITIALS}</code> with a <code>username</code> and <code>password</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">INITIALS</span><span class="o">=</span>ns<span class="w"> </span><span class="c1"># CHANGEME</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>$<span class="w"> </span>vault<span class="w"> </span>kv<span class="w"> </span>put<span class="w"> </span>internal/database/config-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="w"> </span><span class="nv">username</span><span class="o">=</span><span class="s2">&quot;db-readonly-username&quot;</span><span class="w"> </span><span class="nv">password</span><span class="o">=</span><span class="s2">&quot;db-secret-password&quot;</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>Key<span class="w">              </span>Value
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>---<span class="w">              </span>-----
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>created_time<span class="w">     </span><span class="m">2020</span>-03-25T19:03:57.127711644Z
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>deletion_time<span class="w">    </span>n/a
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>destroyed<span class="w">        </span><span class="nb">false</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>version<span class="w">          </span><span class="m">1</span>
+</code></pre></div>
+</li>
+<li>
+<p>Verify that the secret is defined at the path <code>internal/database/config-${INITIALS}</code>.</p>
+<div class="highlight"><pre><span></span><code>$ vault kv get internal/database/config-${INITIALS}
+====== Metadata ======
+Key              Value
+---              -----
+created_time     2020-03-25T19:03:57.127711644Z
+deletion_time    n/a
+destroyed        false
+version          1
+
+====== Data ======
+Key         Value
+---         -----
+password    db-secret-password
+username    db-readonly-username
+</code></pre></div>
+<p>The secret is ready for the application.</p>
+</li>
+</ol>
+<p>Vault provides a <a href="https://developer.hashicorp.com/vault/docs/auth/kubernetes">Kubernetes authentication</a> method that enables clients to authenticate with a Kubernetes Service Account Token. This token is provided to each pod when it is created.</p>
+<ol>
+<li>
+<p>If not enabled already, enable the Kubernetes authentication method (expect an error if already enabled).</p>
+<div class="highlight"><pre><span></span><code>$ vault auth enable kubernetes
+Success! Enabled kubernetes auth method at: kubernetes/
+</code></pre></div>
+<p>Vault accepts a service token from any client in the Kubernetes cluster. During authentication, Vault verifies that the service account token is valid by querying a token review Kubernetes endpoint.</p>
+</li>
+<li>
+<p>Configure the Kubernetes authentication method to use the location of the Kubernetes API.</p>
+<p>Note</p>
+<p>For the best compatibility with recent Kubernetes versions, ensure you are using Vault v1.13.3 or greater.</p>
+<div class="highlight"><pre><span></span><code>$ JWT=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+$ KUBERNETES_HOST=https://${KUBERNETES_PORT_443_TCP_ADDR}:443
+$ vault write --tls-skip-verify auth/kubernetes/config \
+token_reviewer_jwt=$JWT kubernetes_host=$KUBERNETES_HOST \
+kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+</code></pre></div>
+<p>Successful output from the command resembles this example:</p>
+<div class="highlight"><pre><span></span><code>Success! Data written to: auth/kubernetes/config
+</code></pre></div>
+<p>The environment variable <code>KUBERNETES_PORT_443_TCP_ADDR</code> is defined and references the internal network address of the Kubernetes host.</p>
+<p>For a client to read the secret data defined at <code>internal/database/config-${INITIALS}</code>, requires that the read capability be granted for the path <code>internal/data/database/config-${INITIALS}</code>. This is an example of a <a href="https://developer.hashicorp.com/vault/docs/concepts/policies">policy</a>. A policy defines a set of capabilities.</p>
+</li>
+<li>
+<p>Write out the policy named <code>internal-app-${INITIALS}</code> that enables the <code>read</code> capability for secrets at path <code>internal/data/database/config-${INITIALS}</code>.</p>
+<div class="highlight"><pre><span></span><code>$ vault policy write internal-app-${INITIALS} - &lt;&lt;EOF
+path &quot;internal/data/database/config-${INITIALS}&quot; {
+   capabilities = [&quot;read&quot;]
+}
+EOF
+</code></pre></div>
+</li>
+<li>
+<p>Create a Kubernetes authentication role named <code>internal-app-${INITIALS}</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>$<span class="w"> </span>vault<span class="w"> </span>write<span class="w"> </span>auth/kubernetes/role/internal-app-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">        </span><span class="nv">bound_service_account_names</span><span class="o">=</span>internal-app-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">        </span><span class="nv">bound_service_account_namespaces</span><span class="o">=</span>lab-security-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">        </span><span class="nv">policies</span><span class="o">=</span>internal-app-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">        </span><span class="nv">ttl</span><span class="o">=</span>24h
+</code></pre></div>
+<p>Successful output from the command resembles this example:</p>
+<div class="highlight"><pre><span></span><code>Success! Data written to: auth/kubernetes/role/internal-app-${INITIALS}
+</code></pre></div>
+<p>The role connects the Kubernetes service account, <code>internal-app-${INITIALS}</code>, and namespace, <code>lab-security-${INITIALS}</code>, with the Vault policy, <code>internal-app-${INITIALS}</code>. The tokens returned after authentication are valid for 24 hours.</p>
+</li>
+<li>
+<p>Lastly, exit the <code>vault-0</code> pod.</p>
+</li>
+</ol>
+<h2 id="step-4-injecting-secrets-into-an-app">Step 4: Injecting secrets into an app</h2>
+<p>The Vault Kubernetes authentication role defined a Kubernetes service account named <code>internal-app-${INITIALS}</code>.</p>
+<p>A service account provides an identity for processes that run in a Pod. With this identity we will be able to run the application within the cluster.</p>
+<ol>
+<li>
+<p>Create a Kubernetes service account named <code>internal-app-${INITIALS}</code> in a new <code>lab-security-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ export INITIALS=ns # CHANGEME
+$ kubectl create namespace lab-security-${INITIALS}
+$ kubectl config set-context --current --namespace lab-security-${INITIALS}
+$ kubectl create sa internal-app-${INITIALS}
+</code></pre></div>
+</li>
+<li>
+<p>Get all the service accounts in the lab-security-${INITIALS} namespace. Verify that the service account has been created.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get serviceaccounts
+NAME                   SECRETS   AGE
+lab-security-ns        1         52m
+internal-app-ns        1         13s
+vault                  1         43m
+vault-agent-injector   1         43m
+</code></pre></div>
+<p>The name of the service account here aligns with the name assigned to the <code>bound_service_account_names</code> field when the <code>internal-app-${INITIALS}</code> role was created.</p>
+</li>
+</ol>
+<p>You have created a sample application, published it to DockerHub, and created a Kubernetes deployment that launches this application.</p>
+<ol>
+<li>
+<p>Display the deployment for the <code>orgchart</code> application.</p>
+<div class="highlight"><pre><span></span><code>$ cat deployment-orgchart.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   name: orgchart
+   labels:
+      app: orgchart
+spec:
+   selector:
+      matchLabels:
+      app: orgchart
+   replicas: 1
+   template:
+      metadata:
+      annotations:
+      labels:
+         app: orgchart
+      spec:
+      serviceAccountName: internal-app
+      containers:
+         - name: orgchart
+            image: jweissig/app:0.0.1
+</code></pre></div>
+<p>The name of this deployment is <code>orgchart</code>. The <code>spec.template.spec.serviceAccountName</code> defines the service account <code>internal-app</code> to run this container.</p>
+</li>
+<li>
+<p>Apply the deployment defined in <code>deployment-orgchart.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code>$ cat deployment-orgchart.yaml | sed s/internal-app/internal-app-${INITIALS}/g | kubectl apply -f -
+deployment.apps/orgchart created
+</code></pre></div>
+</li>
+<li>
+<p>Get all the pods in the <code>lab-security-${INITIALS}</code> namespace and note down the name of the pod with a name prefixed with "orgchart-".</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get pods
+NAME                                    READY   STATUS    RESTARTS   AGE
+orgchart-69697d9598-l878s               1/1     Running   0          18s
+</code></pre></div>
+<p>The orgchart pod is displayed here as the pod prefixed with <code>orgchart</code>.</p>
+<p>Additional waiting</p>
+<p>The deployment of the pod requires the retrieval of the application container from <a href="https://hub.docker.com/">Docker Hub</a>. This displays the STATUS of <code>ContainerCreating</code>. The pod reports that it is not ready (<code>0/1</code>).</p>
+<p>The Vault-Agent injector looks for deployments that define specific annotations. None of these annotations exist in the current deployment. This means that no secrets are present on the <code>orgchart</code> container in the <code>orgchart</code> pod.</p>
+<p>Note</p>
+<p>Consider removing the rest of this section - the user should not purposely fail...</p>
+</li>
+<li>
+<p>Verify that no secrets are written to the <code>orgchart</code> container in the <code>orgchart</code> pod.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl exec \
+      $(kubectl get pod -l app=orgchart -o jsonpath=&quot;{.items[0].metadata.name}&quot;) \
+      --container orgchart -- ls /vault/secrets
+</code></pre></div>
+<p>The output displays that there is no such file or directory named <code>/vault/secrets</code>:</p>
+<div class="highlight"><pre><span></span><code>ls: /vault/secrets: No such file or directory
+command terminated with exit code 1
+</code></pre></div>
+</li>
+</ol>
+<p>The deployment is running the pod with the <code>internal-app</code> Kubernetes service account in the <code>lab-security-${INITIALS}</code> namespace. The Vault Agent Injector only modifies a deployment if it contains a specific set of annotations. An existing deployment may have its definition patched to include the necessary annotations.</p>
+<ol>
+<li>
+<p>Display the deployment patch <code>patch-inject-secrets.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code>$ cat patch-inject-secrets.yaml
+</code></pre></div>
+<p>patch-inject-secrets.yaml</p>
+<div class="highlight"><pre><span></span><code>spec:
+   template:
+      metadata:
+      annotations:
+         vault.hashicorp.com/agent-inject: &#39;true&#39;
+         vault.hashicorp.com/role: &#39;internal-app&#39;
+         vault.hashicorp.com/agent-inject-secret-database-config.txt: &#39;internal/data/database/config&#39;
+</code></pre></div>
+<p>These <a href="https://developer.hashicorp.com/vault/docs/platform/k8s/injector/annotations">annotations</a> define a partial structure of the deployment schema and are prefixed with <code>vault.hashicorp.com</code>.</p>
+<ul>
+<li><a href="https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#agent-inject"><code>agent-inject</code></a> enables the Vault Agent Injector service</li>
+<li><a href="https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#role"><code>role</code></a> is the Vault Kubernetes authentication role</li>
+<li><a href="https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#agent-inject-secret-filepath"><code>agent-inject-secret-FILEPATH</code></a> prefixes the path of the file, <code>database-config.txt</code> written to the <code>/vault/secrets</code> directory. The value is the path to the secret defined in Vault.</li>
+<li>
+<p>Patch the <code>orgchart</code> deployment defined in <code>patch-inject-secrets.yaml</code>.</p>
+<p>$ kubectl patch deployment orgchart --patch \
+    "$(cat patch-inject-secrets.yaml  | sed s/internal-app/internal-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g)"
+deployment.apps/orgchart patched</p>
+</li>
+</ul>
+<p>A new <code>orgchart</code> pod starts alongside the existing pod. When it is ready the original terminates and removes itself from the list of active pods.</p>
+</li>
+<li>
+<p>Get all the pods in the <code>lab-security-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get pods
+NAME                                    READY   STATUS     RESTARTS   AGE
+orgchart-599cb74d9c-s8hhm               0/2     Init:0/1   0          23s
+</code></pre></div>
+<p>Wait until the re-deployed <code>orgchart</code> pod reports that it is <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase"><code>Running</code></a> and ready (<code>2/2</code>).</p>
+<p>This new pod now launches two containers. The application container, named <code>orgchart</code>, and the Vault Agent container, named <code>vault-agent</code>.</p>
+</li>
+<li>
+<p>Display the logs of the <code>vault-agent</code> container in the new <code>orgchart</code> pod.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl logs \
+      $(kubectl get pod -l app=orgchart -o jsonpath=&quot;{.items[0].metadata.name}&quot;) \
+      --container vault-agent
+</code></pre></div>
+<p>Vault Agent manages the token lifecycle and the secret retrieval. The secret is rendered in the <code>orgchart</code> container at the path <code>/vault/secrets/database-config.txt</code>.</p>
+</li>
+<li>
+<p>Display the secret written to the <code>orgchart</code> container.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl exec \
+      $(kubectl get pod -l app=orgchart -o jsonpath=&quot;{.items[0].metadata.name}&quot;) \
+      --container orgchart -- cat /vault/secrets/database-config.txt
+</code></pre></div>
+<p>The unformatted secret data is present on the container:</p>
+<div class="highlight"><pre><span></span><code>data: map[password:db-secret-password username:db-readonly-user]
+metadata: map[created_time:2019-12-20T18:17:50.930264759Z deletion_time: destroyed:false version:2]
+</code></pre></div>
+</li>
+</ol>
+<p>The structure of the injected secrets may need to be structured in a way for an application to use. Before writing the secrets to the file system a template can structure the data. To apply this template a new set of annotations need to be applied.</p>
+<ol>
+<li>
+<p>Display the annotations file that contains a template definition.</p>
+<div class="highlight"><pre><span></span><code>$ cat patch-inject-secrets-as-template.yaml
+</code></pre></div>
+<p>patch-inject-secrets-as-template.yaml</p>
+<div class="highlight"><pre><span></span><code>spec:
+   template:
+      metadata:
+      annotations:
+         vault.hashicorp.com/agent-inject: &#39;true&#39;
+         vault.hashicorp.com/agent-inject-status: &#39;update&#39;
+         vault.hashicorp.com/role: &#39;internal-app&#39;
+         vault.hashicorp.com/agent-inject-secret-database-config.txt: &#39;internal/data/database/config&#39;
+         vault.hashicorp.com/agent-inject-template-database-config.txt: |
+            {{- with secret &quot;internal/data/database/config&quot; -}}
+            postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
+            {{- end -}}
+</code></pre></div>
+<p>This patch contains two new annotations:</p>
+<ul>
+<li><a href="https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#agent-inject-status"><code>agent-inject-status</code></a> set to <code>update</code> informs the injector reinject these values.</li>
+<li><a href="https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#agent-inject-template-filepath"><code>agent-inject-template-FILEPATH</code></a> prefixes the file path. The value defines the <a href="https://developer.hashicorp.com/vault/docs/agent-and-proxy/agent/template">Vault Agent template</a> to apply to the secret's data.</li>
+</ul>
+<p>The template formats the username and password as a PostgreSQL connection string.</p>
+</li>
+<li>
+<p>Apply the updated annotations.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl patch deployment orgchart --patch \
+    &quot;$(cat patch-inject-secrets-as-template.yaml | sed s/internal-app/internal-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g)&quot;
+deployment.apps/exampleapp patched
+</code></pre></div>
+</li>
+<li>
+<p>Get all the pods in the <code>lab-security-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get pods
+NAME                                    READY   STATUS    RESTARTS   AGE
+orgchart-554db4579d-w6565               2/2     Running   0          16s
+</code></pre></div>
+<p>Wait until the re-deployed <code>orgchart</code> pod reports that it is <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase"><code>Running</code></a> and ready (<code>2/2</code>).</p>
+</li>
+<li>
+<p>Finally, display the secret written to the <code>orgchart</code> container in the <code>orgchart</code> pod.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl exec \
+      $(kubectl get pod -l app=orgchart -o jsonpath=&quot;{.items[0].metadata.name}&quot;) \
+      -c orgchart -- cat /vault/secrets/database-config.txt
+</code></pre></div>
+<p>The secrets are rendered in a PostgreSQL connection string is present on the container:</p>
+<div class="highlight"><pre><span></span><code>postgresql://db-readonly-user:db-secret-password@postgres:5432/wizard
+</code></pre></div>
+</li>
+</ol>
+<p>The annotations may patch these secrets into any deployment. Pods require that the annotations be included in their initial definition.</p>
+<ol>
+<li>
+<p>Display the pod definition for the <code>payroll</code> application.</p>
+<div class="highlight"><pre><span></span><code>apiVersion: v1
+kind: Pod
+metadata:
+name: payroll
+labels:
+   app: payroll
+annotations:
+   vault.hashicorp.com/agent-inject: &#39;true&#39;
+   vault.hashicorp.com/role: &#39;internal-app&#39;
+   vault.hashicorp.com/agent-inject-secret-database-config.txt: &#39;internal/data/database/config&#39;
+   vault.hashicorp.com/agent-inject-template-database-config.txt: |
+      {{- with secret &quot;internal/data/database/config&quot; -}}
+      postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
+      {{- end -}}
+spec:
+serviceAccountName: internal-app
+containers:
+   - name: payroll
+      image: jweissig/app:0.0.1
+</code></pre></div>
+</li>
+<li>
+<p>Apply the pod defined in <code>pod-payroll.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code>$ cat pod-payroll.yaml | sed s/internal-app/internal-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g | kubectl apply -f -
+pod/payroll created
+</code></pre></div>
+</li>
+<li>
+<p>Get all the pods in the <code>lab-security-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get pods
+NAME                                    READY   STATUS    RESTARTS   AGE
+orgchart-554db4579d-w6565               2/2     Running   0          29m
+payroll                                 2/2     Running   0          12s
+</code></pre></div>
+<p>Wait until the <code>payroll</code> pod reports that it is <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase"><code>Running</code></a> and ready (<code>2/2</code>).</p>
+</li>
+<li>
+<p>Display the secret written to the <code>payroll</code> container in the <code>payroll</code> pod.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl exec \
+      payroll \
+      --container payroll -- cat /vault/secrets/database-config.txt
+</code></pre></div>
+<p>The secrets are rendered in a PostgreSQL connection string is present on the container:</p>
+<div class="highlight"><pre><span></span><code>postgresql://db-readonly-user:db-secret-password@postgres:5432/wizard
+</code></pre></div>
+</li>
+</ol>
+<h2 id="step-5-understanding-scopes">Step 5: Understanding scopes</h2>
+<p>Pods run with a Kubernetes service account other than the ones defined in the Vault Kubernetes authentication role are <strong>NOT</strong> able to access the secrets defined at that path.</p>
+<ol>
+<li>
+<p>Display the deployment and service account for the <code>website</code> application.</p>
+<div class="highlight"><pre><span></span><code>$ cat deployment-website.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+name: website
+labels:
+   app: website
+spec:
+selector:
+   matchLabels:
+      app: website
+replicas: 1
+template:
+   metadata:
+      annotations:
+      vault.hashicorp.com/agent-inject: &#39;true&#39;
+      vault.hashicorp.com/role: &#39;internal-app&#39;
+      vault.hashicorp.com/agent-inject-secret-database-config.txt: &#39;internal/data/database/config&#39;
+      vault.hashicorp.com/agent-inject-template-database-config.txt: |
+         {{- with secret &quot;internal/data/database/config&quot; -}}
+         postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
+         {{- end -}}
+      labels:
+      app: website
+   spec:
+      # This service account does not have permission to request the secrets.
+      serviceAccountName: website
+      containers:
+      - name: website
+         image: jweissig/app:0.0.1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+name: website
+</code></pre></div>
+</li>
+<li>
+<p>Apply the deployment and service account defined in <code>deployment-website.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl apply --filename deployment-website.yaml
+deployment.apps/website created
+serviceaccount/website created
+</code></pre></div>
+</li>
+<li>
+<p>Get all the pods in the <code>lab-security-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get pods
+NAME                                    READY   STATUS     RESTARTS   AGE
+orgchart-554db4579d-w6565               2/2     Running    0          29m
+payroll                                 2/2     Running    0          12s
+website-7fc8b69645-527rf                0/2     Init:0/1   0          76s
+</code></pre></div>
+<p>The <code>website</code> deployment creates a pod but it is <strong>NEVER</strong> ready.</p>
+</li>
+<li>
+<p>Display the logs of the <code>vault-agent-init</code> container in the <code>website</code> pod.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl logs \
+      $(kubectl get pod -l app=website -o jsonpath=&quot;{.items[0].metadata.name}&quot;) \
+      --container vault-agent-init
+</code></pre></div>
+<p>The initialization process failed because the service account name is not authorized:</p>
+<div class="highlight"><pre><span></span><code>...
+[INFO]  auth.handler: authenticating
+[ERROR] auth.handler: error authenticating: error=&quot;Error making API request.
+
+URL: PUT http://vault.lab-security-ns.svc:8200/v1/auth/kubernetes/login
+Code: 500. Errors:
+
+* service account name not authorized&quot; backoff=1.562132589
+</code></pre></div>
+<p>The service account, <code>external-app</code> is not assigned to any Vault Kubernetes authentication role. This failure to authenticate causes the deployment to fail initialization.</p>
+</li>
+<li>
+<p>Display the deployment patch <code>patch-website.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code>spec:
+   template:
+      spec:
+      serviceAccountName: internal-app
+</code></pre></div>
+<p>The patch modifies the deployment definition to use the service account <code>internal-app</code>. This Kubernetes service account is authorized by the Vault Kubernetes authentication role.</p>
+</li>
+<li>
+<p>Patch the <code>website</code> deployment defined in <code>patch-website.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl patch deployment website --patch \
+    &quot;$(cat patch-website.yaml | sed s/internal-app/internal-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g)&quot;
+</code></pre></div>
+</li>
+<li>
+<p>Get all the pods in the <code>lab-security-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get pods
+NAME                                    READY   STATUS     RESTARTS   AGE
+orgchart-554db4579d-w6565               2/2     Running    0          29m
+payroll                                 2/2     Running    0          12s
+website-788d689b87-tll2r                2/2     Running    0          27s
+</code></pre></div>
+<p>Wait until the <code>website</code> pod reports that it is <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase"><code>Running</code></a> and ready (<code>2/2</code>).</p>
+</li>
+<li>
+<p>Finally, display the secret written to the <code>website</code> container in the <code>website</code> pod.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl exec \
+      $(kubectl get pod -l app=website -o jsonpath=&quot;{.items[0].metadata.name}&quot;) \
+      --container website -- cat /vault/secrets/database-config.txt
+</code></pre></div>
+<p>The secrets are rendered in a PostgreSQL connection string is present on the container:</p>
+<div class="highlight"><pre><span></span><code>postgresql://db-readonly-user:db-secret-password@postgres:5432/wizard
+</code></pre></div>
+<p>Alternatively, you can define a new Vault Kubernetes role, that enables the original service account access, and patch the deployment.</p>
+</li>
+</ol>
+<p>Pods run in a namespace other than the ones defined in the Vault Kubernetes authentication role are <strong>NOT</strong> able to access the secrets defined at that path.</p>
+<ol>
+<li>
+<p>Create the <code>lab-security-offsite-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl create namespace lab-security-offsite-${INITIALS}
+namespace/lab-security-offsite-ns created
+</code></pre></div>
+</li>
+<li>
+<p>Set the current context to the <code>lab-security-offsite-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl config set-context --current --namespace lab-security-offsite-${INITIALS}
+Context &quot;...&quot; modified.
+</code></pre></div>
+</li>
+<li>
+<p>Create a Kubernetes service account named <code>internal-app-${INITIALS}</code> in the <code>lab-security-offsite-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl create sa internal-app-${INITIALS}
+serviceaccount/internal-app-${INITIALS} created
+</code></pre></div>
+</li>
+<li>
+<p>Display the deployment for the <code>issues</code> application.</p>
+<div class="highlight"><pre><span></span><code>$ cat deployment-issues.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+name: issues
+labels:
+   app: issues
+spec:
+selector:
+   matchLabels:
+      app: issues
+replicas: 1
+template:
+   metadata:
+      annotations:
+      vault.hashicorp.com/agent-inject: &#39;true&#39;
+      vault.hashicorp.com/role: &#39;internal-app&#39;
+      vault.hashicorp.com/agent-inject-secret-database-config.txt: &#39;internal/data/database/config&#39;
+      vault.hashicorp.com/agent-inject-template-database-config.txt: |
+         {{- with secret &quot;internal/data/database/config&quot; -}}
+         postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
+         {{- end -}}
+      labels:
+      app: issues
+   spec:
+      serviceAccountName: internal-app
+      containers:
+      - name: issues
+         image: jweissig/app:0.0.1
+</code></pre></div>
+</li>
+<li>
+<p>Apply the deployment defined in <code>deployment-issues.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code>$ cat deployment-issues.yaml | \
+    sed s/internal-app/internal-app-${INITIALS}/g | \
+    sed s#database/config#database/config-${INITIALS}#g | \
+    kubectl apply -f -
+deployment.apps/issues created
+</code></pre></div>
+</li>
+<li>
+<p>Get all the pods in the <code>lab-security-offsite-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get pods
+NAME                      READY   STATUS     RESTARTS   AGE
+issues-79d8bf7cdf-dkdlq   0/2     Init:0/1   0          3s
+</code></pre></div>
+<p>Current context</p>
+<p>The same command is issued but the results are different because you are now in a different namespace.</p>
+<p>The <code>issues</code> deployment creates a pod but it is <strong>NEVER</strong> ready.</p>
+</li>
+<li>
+<p>Display the logs of the <code>vault-agent-init</code> container in the <code>issues</code> pod.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl logs \
+   $(kubectl get pod -l app=issues -o jsonpath=&quot;{.items[0].metadata.name}&quot;) \
+   --container vault-agent-init
+</code></pre></div>
+<p>The initialization process fails because the namespace is not authorized:</p>
+<div class="highlight"><pre><span></span><code>...
+[INFO]  auth.handler: authenticating
+[ERROR] auth.handler: error authenticating: error=&quot;Error making API request.
+
+URL: PUT http://vault.lab-security-${INITIALS}.svc:8200/v1/auth/kubernetes/login
+Code: 500. Errors:
+
+* namespace not authorized&quot; backoff=1.9882590740000001
+</code></pre></div>
+<p>The namespace, <code>lab-security-offsite-${INITIALS}</code> is not assigned to any Vault Kubernetes authentication role. This failure to authenticate causes the deployment to fail initialization.</p>
+</li>
+<li>
+<p>Start an interactive shell session on the <code>vault-0</code> pod in the <code>lab-security-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>$ kubectl exec --namespace lab-security -it vault-0 -- /bin/sh
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>/ $
+</code></pre></div>
+<p>Your system prompt is replaced with a new prompt <code>/ $</code>. Commands issued at this prompt are executed on the <code>vault-0</code> container.</p>
+</li>
+<li>
+<p>Create a Kubernetes authentication role named <code>offsite-app</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">INITIALS</span><span class="o">=</span>ns<span class="w"> </span><span class="c1"># CHANGEME</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>$<span class="w"> </span>vault<span class="w"> </span>write<span class="w"> </span>auth/kubernetes/role/offsite-app-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nv">bound_service_account_names</span><span class="o">=</span>internal-app-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nv">bound_service_account_namespaces</span><span class="o">=</span>lab-security-offsite-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="nv">policies</span><span class="o">=</span>internal-app-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span><span class="nv">ttl</span><span class="o">=</span>24h
+</code></pre></div>
+<p>Successful output from the command resembles this example:</p>
+<div class="highlight"><pre><span></span><code>Success! Data written to: auth/kubernetes/role/offsite-app
+</code></pre></div>
+</li>
+<li>
+<p>Exit the <code>vault-0</code> pod.</p>
+</li>
+<li>
+<p>Display the deployment patch <code>patch-issues.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nt">template</span><span class="p">:</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">        </span><span class="nt">vault.hashicorp.com/agent-inject</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;true&#39;</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">        </span><span class="nt">vault.hashicorp.com/agent-inject-status</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;update&#39;</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">        </span><span class="nt">vault.hashicorp.com/role</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;offsite-app&#39;</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">        </span><span class="nt">vault.hashicorp.com/agent-inject-secret-database-config.txt</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;internal/data/database/config&#39;</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">        </span><span class="nt">vault.hashicorp.com/agent-inject-template-database-config.txt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">            </span><span class="no">{{- with secret &quot;internal/data/database/config&quot; -}}</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">            </span><span class="no">postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">            </span><span class="no">{{- end -}}</span>
+</code></pre></div>
+<p>The patch performs an update to set the <code>vault.hashicorp.com/role</code> to the Vault Kubernetes role <code>offsite-app-${INITIALS}</code>.</p>
+</li>
+<li>
+<p>Patch the <code>issues</code> deployment defined in <code>patch-issues.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>deployment<span class="w"> </span>issues<span class="w"> </span>--patch<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span><span class="s2">&quot;</span><span class="k">$(</span>cat<span class="w"> </span>patch-issues.yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/offsite-app/offsite-app-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span>/g<span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s#database/config#database/config-<span class="si">${</span><span class="nv">INITIALS</span><span class="si">}</span><span class="c1">#g)&quot;</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>deployment.apps/issues<span class="w"> </span>patched
+</code></pre></div>
+<p>A new <code>issues</code> pod starts alongside the existing pod. When it is ready the original terminates and removes itself from the list of active pods.</p>
+</li>
+<li>
+<p>Get all the pods in the <code>lab-security-offsite-${INITIALS}</code> namespace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pods
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>NAME<span class="w">                      </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>issues-7fd66f98f6-ffzh7<span class="w">   </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>94s
+</code></pre></div>
+<p>Wait until the re-deployed <code>issues</code> pod reports that it is <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase"><code>Running</code></a> and ready (<code>2/2</code>).</p>
+</li>
+<li>
+<p>Finally, display the secret written to the <code>issues</code> container in the <code>issues</code> pod.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">    </span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>issues<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s2">&quot;{.items[0].metadata.name}&quot;</span><span class="k">)</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span>--container<span class="w"> </span>issues<span class="w"> </span>--<span class="w"> </span>cat<span class="w"> </span>/vault/secrets/database-config.txt
+</code></pre></div>
+<p>The secrets are rendered in a PostgreSQL connection string is present on the container:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>postgresql://db-readonly-user:db-secret-password@postgres:5432/wizard
+</code></pre></div>
+</li>
+</ol>
+<h2 id="conclusion">Conclusion</h2>
+<p>Congrats, you have completed the lab! You launched Vault and the injector service with the Vault Helm chart. Learn more about the Vault Helm chart by reading the <a href="https://developer.hashicorp.com/vault/docs/platform/k8s">documentation</a>, exploring the <a href="https://github.com/hashicorp/vault-helm">project source code</a>, reading the blog post announcing the <a href="https://www.hashicorp.com/blog/injecting-vault-secrets-into-kubernetes-pods-via-a-sidecar">"Injecting Vault Secrets into Kubernetes Pods via a Sidecar"</a>, or the documentation for <a href="https://developer.hashicorp.com/vault/docs/platform/k8s/injector">Agent Sidecar Injector</a></p>
+<p>Then you deployed several applications to demonstrate how this new injector service retrieves and writes these secrets for the applications to use. Explore how pods can retrieve them <a href="https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-minikube-consul">directly via network requests</a> or secrets <a href="https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-secret-store-driver">mounted on ephemeral volumes</a>.</p>
+<p>An alternative option to the agent is the is the <a href="https://developer.hashicorp.com/vault/docs/platform/k8s/vso">Vault Secrets Operator</a>. It is a Kubernetes operator specifically made to aid in management of Vault on Kubernetes. This is similar to the Vault Agent sidecar, but in a Kubernetes native fashion.</p>
+<ul>
+<li><a href="https://developer.hashicorp.com/vault/docs/platform/k8s/injector">Agent Sidecar Injector</a></li>
+<li><a href="https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#mutatingadmissionwebhook">Mutating admission webhook</a></li>
+<li><a href="https://medium.com/bb-tutorials-and-thoughts/kubernetes-learn-sidecar-container-pattern-6d8c21f873d">Sidecar container pattern</a></li>
+<li><a href="https://developer.hashicorp.com/vault/docs/platform/k8s/vso">Vault Secrets Operator</a></li>
+<li><a href="https://www.redhat.com/en/blog/integrating-hashicorp-vault-in-openshift-4">Integrating Hashicorp Vault in OpenShift 4</a></li>
+<li><a href="https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar">developer.hashicorp.com</a></li>
+</ul>
+
+
+
+
+
+
+
+
+  <aside class="md-source-file">
+    
+    
+    
+      
+  
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Contributors">
+      
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4Z"/></svg>
+      
+    </span>
+    <nav>
+      
+        <a href="mailto:noe.samaille@ibm.com">Noé Samaille</a>
+    </nav>
+  </span>
+
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/cloud-design-patterns-journey/docs" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.prune", "navigation.indexes", "content.action.edit", "content.action.view", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.bd41221c.min.js"></script>
+      
+    
+  </body>
+</html>
