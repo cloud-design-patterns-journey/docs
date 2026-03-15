@@ -31,10 +31,16 @@ In this tutorial, you setup Vault and this injector service with the Vault Helm 
   - [Prerequisites](#prerequisites)
     - [Install kubectl and helm CLIs](#install-kubectl-and-helm-clis)
   - [Step 1: Get lab resources](#step-1-get-lab-resources)
-  - [Step 2: Installing HashiCorp Vault](#step-2-installing-hashicorp-vault)
+  - [Step 2 (SKIP): Installing HashiCorp Vault](#step-2-skip-installing-hashicorp-vault)
   - [Step 3: Setting up Vault for secret injection](#step-3-setting-up-vault-for-secret-injection)
   - [Step 4: Injecting secrets into an app](#step-4-injecting-secrets-into-an-app)
   - [Step 5: Understanding scopes](#step-5-understanding-scopes)
+  - [Troubleshooting](#troubleshooting)
+    - [Common Issues](#common-issues)
+      - [ImagePullBackOff Error](#imagepullbackoff-error)
+      - [Authentication Errors](#authentication-errors)
+      - [Namespace Not Authorized](#namespace-not-authorized)
+      - [Secret Path Not Found](#secret-path-not-found)
   - [Conclusion](#conclusion)
 
 ## Prerequisites
@@ -64,9 +70,9 @@ brew install helm
 
 ## Step 1: Get lab resources
     
-1.  Retrieve the web application and additional configuration by cloning the [hashicorp-education/learn-vault-kubernetes-sidecar](https://github.com/hashicorp-education/learn-vault-kubernetes-sidecar) repository from GitHub.
+1.  Retrieve the web application and additional configuration by cloning the [hashicorp-education/learn-vault-kubernetes-sidecar](https://github.com/cloud-design-patterns-journey/learn-vault-kubernetes-sidecar) repository from GitHub.
     
-        $ git clone https://github.com/hashicorp-education/learn-vault-kubernetes-sidecar.git
+        $ git clone https://github.com/cloud-design-patterns-journey/learn-vault-kubernetes-sidecar.git
         
     
 2.  Move into the clones repository.
@@ -75,7 +81,7 @@ brew install helm
             
     This tutorial assumes that the following commands are executed in this directory.
 
-## Step 2: Installing HashiCorp Vault
+## Step 2 (SKIP): Installing HashiCorp Vault
 
 The recommended way to run Vault on Kubernetes is via the [Helm chart](https://developer.hashicorp.com/vault/docs/platform/k8s/helm). [Helm](https://helm.sh/docs/helm/) is a package manager that installs and configures all the necessary components to run Vault in several different modes. A Helm chart includes [templates](https://helm.sh/docs/chart_template_guide) that enable conditional and parameterized execution. These parameters can be set through command-line arguments or defined in YAML.
 
@@ -154,6 +160,16 @@ The recommended way to run Vault on Kubernetes is via the [Helm chart](https://d
     Wait until the `vault-0` pod and `vault-agent-injector` pod are running and ready (`1/1`).
 
 ## Step 3: Setting up Vault for secret injection
+
+!!! note "Working Directory"
+    The following steps assume you are working in the `learn-vault-kubernetes-sidecar/` directory. If you cloned the repository in Step 1, navigate to this directory:
+    ```sh
+    cd learn-vault-kubernetes-sidecar/
+    ```
+    Alternatively, you can reference files with their full path from the repository root.
+
+!!! info "Red Hat Registry Compatibility"
+    All YAML files in the repository include the `vault.hashicorp.com/agent-image` annotation configured to use the Red Hat registry image (`registry.connect.redhat.com/hashicorp/vault:1.16.1-ubi`). This ensures compatibility with OpenShift and environments that require Red Hat certified images, preventing `ImagePullBackOff` errors.
 
 The applications that you deploy in the [Inject secrets into the pod](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar#inject-secrets-into-the-pod) section expect Vault to store a username and password stored at the path `internal/database/config`. To create this secret requires that a [key-value secret engine](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2) is enabled and a username and password is put at the specified path.
 
@@ -349,10 +365,6 @@ You have created a sample application, published it to DockerHub, and created a 
     
     The Vault-Agent injector looks for deployments that define specific annotations. None of these annotations exist in the current deployment. This means that no secrets are present on the `orgchart` container in the `orgchart` pod.
     
-    Note
-    
-    Consider removing the rest of this section - the user should not purposely fail...
-    
 4.  Verify that no secrets are written to the `orgchart` container in the `orgchart` pod.
     
         $ kubectl exec \
@@ -383,6 +395,7 @@ The deployment is running the pod with the `internal-app` Kubernetes service acc
                  vault.hashicorp.com/agent-inject: 'true'
                  vault.hashicorp.com/role: 'internal-app'
                  vault.hashicorp.com/agent-inject-secret-database-config.txt: 'internal/data/database/config'
+                 vault.hashicorp.com/agent-image: "registry.connect.redhat.com/hashicorp/vault:1.16.1-ubi"
         
     
     These [annotations](https://developer.hashicorp.com/vault/docs/platform/k8s/injector/annotations) define a partial structure of the deployment schema and are prefixed with `vault.hashicorp.com`.
@@ -454,6 +467,7 @@ The structure of the injected secrets may need to be structured in a way for an 
                     {{- with secret "internal/data/database/config" -}}
                     postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
                     {{- end -}}
+                 vault.hashicorp.com/agent-image: "registry.connect.redhat.com/hashicorp/vault:1.16.1-ubi"
         
     
     This patch contains two new annotations:
@@ -467,7 +481,7 @@ The structure of the injected secrets may need to be structured in a way for an 
     
         $ kubectl patch deployment orgchart --patch \
             "$(cat patch-inject-secrets-as-template.yaml | sed s/internal-app/internal-app-${INITIALS}/g | sed s#database/config#database/config-${INITIALS}#g)"
-        deployment.apps/exampleapp patched
+        deployment.apps/orgchart patched
         
     
 3.  Get all the pods in the `lab-security-${INITIALS}` namespace.
@@ -508,6 +522,7 @@ The annotations may patch these secrets into any deployment. Pods require that t
               {{- with secret "internal/data/database/config" -}}
               postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
               {{- end -}}
+           vault.hashicorp.com/agent-image: "registry.connect.redhat.com/hashicorp/vault:1.16.1-ubi"
         spec:
         serviceAccountName: internal-app
         containers:
@@ -565,13 +580,14 @@ Pods run with a Kubernetes service account other than the ones defined in the Va
         template:
            metadata:
               annotations:
-              vault.hashicorp.com/agent-inject: 'true'
-              vault.hashicorp.com/role: 'internal-app'
-              vault.hashicorp.com/agent-inject-secret-database-config.txt: 'internal/data/database/config'
+              vault.hashicorp.com/agent-inject: "true"
+              vault.hashicorp.com/role: "internal-app"
+              vault.hashicorp.com/agent-inject-secret-database-config.txt: "internal/data/database/config"
               vault.hashicorp.com/agent-inject-template-database-config.txt: |
                  {{- with secret "internal/data/database/config" -}}
                  postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
                  {{- end -}}
+              vault.hashicorp.com/agent-image: "registry.connect.redhat.com/hashicorp/vault:1.16.1-ubi"
               labels:
               app: website
            spec:
@@ -630,11 +646,14 @@ Pods run with a Kubernetes service account other than the ones defined in the Va
     
         spec:
            template:
+              metadata:
+                 annotations:
+                    vault.hashicorp.com/role: 'internal-app'
               spec:
-              serviceAccountName: internal-app
+                 serviceAccountName: internal-app
         
     
-    The patch modifies the deployment definition to use the service account `internal-app`. This Kubernetes service account is authorized by the Vault Kubernetes authentication role.
+    The patch modifies the deployment definition to use the service account `internal-app` and updates the Vault role annotation to match. This Kubernetes service account is authorized by the Vault Kubernetes authentication role.
     
 6.  Patch the `website` deployment defined in `patch-website.yaml`.
     
@@ -706,13 +725,14 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
         template:
            metadata:
               annotations:
-              vault.hashicorp.com/agent-inject: 'true'
-              vault.hashicorp.com/role: 'internal-app'
-              vault.hashicorp.com/agent-inject-secret-database-config.txt: 'internal/data/database/config'
+              vault.hashicorp.com/agent-inject: "true"
+              vault.hashicorp.com/role: "internal-app"
+              vault.hashicorp.com/agent-inject-secret-database-config.txt: "internal/data/database/config"
               vault.hashicorp.com/agent-inject-template-database-config.txt: |
                  {{- with secret "internal/data/database/config" -}}
                  postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
                  {{- end -}}
+              vault.hashicorp.com/agent-image: "registry.connect.redhat.com/hashicorp/vault:1.16.1-ubi"
               labels:
               app: issues
            spec:
@@ -808,6 +828,7 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
                 {{- with secret "internal/data/database/config" -}}
                 postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
                 {{- end -}}
+            vault.hashicorp.com/agent-image: "registry.connect.redhat.com/hashicorp/vault:1.16.1-ubi"
     ```
 
     The patch performs an update to set the `vault.hashicorp.com/role` to the Vault Kubernetes role `offsite-app-${INITIALS}`.
@@ -845,6 +866,63 @@ Pods run in a namespace other than the ones defined in the Vault Kubernetes auth
     ```
     postgresql://db-readonly-user:db-secret-password@postgres:5432/wizard
     ```
+
+## Troubleshooting
+
+### Common Issues
+
+#### ImagePullBackOff Error
+
+**Problem:** Pods fail to start with `ImagePullBackOff` or `ErrImagePull` status.
+
+**Cause:** This typically occurs on OpenShift or when using Red Hat container registries, as the default Vault agent image from Docker Hub cannot be pulled.
+
+**Solution:** The YAML files in the repository already include the agent-image annotation pointing to the Red Hat registry:
+```yaml
+vault.hashicorp.com/agent-image: "registry.connect.redhat.com/hashicorp/vault:1.16.1-ubi"
+```
+
+This annotation is present in all patch files and deployment definitions. If you're creating custom deployments, ensure you include this annotation in `spec.template.metadata.annotations` for deployments, or `metadata.annotations` for pods.
+
+#### Authentication Errors
+
+**Problem:** Pods show authentication errors in the `vault-agent-init` container logs:
+```
+[ERROR] auth.handler: error authenticating: error="Error making API request.
+Code: 500. Errors:
+* service account name not authorized"
+```
+
+**Cause:** The Kubernetes service account used by the pod is not authorized in the Vault Kubernetes authentication role.
+
+**Solution:**
+1. Verify the service account name matches the one defined in the Vault role
+2. Check that the namespace matches the `bound_service_account_namespaces` in the Vault role
+3. Ensure the Vault policy grants the necessary permissions to the secret path
+
+#### Namespace Not Authorized
+
+**Problem:** Pods in a different namespace cannot authenticate:
+```
+[ERROR] auth.handler: error authenticating: error="Error making API request.
+Code: 500. Errors:
+* namespace not authorized"
+```
+
+**Cause:** The namespace is not included in the Vault Kubernetes authentication role's `bound_service_account_namespaces`.
+
+**Solution:** Create a new Vault Kubernetes authentication role that includes the namespace, or update the existing role to include additional namespaces.
+
+#### Secret Path Not Found
+
+**Problem:** Vault agent logs show "permission denied" or "path not found" errors.
+
+**Cause:** The Vault policy doesn't grant read access to the secret path, or the secret doesn't exist.
+
+**Solution:**
+1. Verify the secret exists: `vault kv get internal/database/config-${INITIALS}`
+2. Check the policy grants read access to `internal/data/database/config-${INITIALS}` (note the `/data/` in the path for kv-v2)
+3. Ensure the role is associated with the correct policy
 
 ## Conclusion
 
