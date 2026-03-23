@@ -55,7 +55,7 @@ The Micro services should adhere to the following technical requirements:
 - Deploy this application with Tekton:
 
     !!! note
-        You should have the [`tkn`](https://github.com/tektoncd/cli?tab=readme-ov-file#installing-tkn), [`tkn pac`](https://pipelinesascode.com/docs/guide/cli/#install) and `oc` CLIs installed. `oc` can be installed through the help section of your OpenShift console.
+        You should have the [`tkn`](https://github.com/tektoncd/cli?tab=readme-ov-file#installing-tkn), [`tkn pac`](https://pipelinesascode.com/docs/cli/installation/) and `oc` CLIs installed. `oc` can be installed through the help section of your OpenShift console.
     
   - In the OpenShift web console, click on the user ID on the top right, click on **Copy login command** and get the OpenShift login command, which includes a token.
   
@@ -108,6 +108,14 @@ The Micro services should adhere to the following technical requirements:
         oc get secret ci-config -n ci-tools -o yaml | sed "s/ci-tools/inventory-${UNIQUE_SUFFIX}-dev/g" | oc apply -f -
         ```
 
+ - Create a default `dockerconfigjson` secret from this:
+
+    ```sh
+    oc get secret registry-config -o yaml | yq '.data."config.json"' | base64 -d > /tmp/registry-config.json
+    oc create secret docker-registry registry-dockerconfigjson --from-file=/tmp/registry-config.json
+    oc secrets link default registry-dockerconfigjson --for=pull
+    ```
+
   - Clone the repo locally:
 
     ```sh
@@ -123,7 +131,7 @@ The Micro services should adhere to the following technical requirements:
     ```
 
   !!! note
-      - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/install/overview/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
+      - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/installation/kubernetes/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
       - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${UNIQUE_SUFFIX}-dev` project/namespace.
 
   - In OpenShift console (**Pipelines Section > Pipelines > Repositories**), edit the newly created `Repository` YAML to add cluster specific configuration (e.g. image repository):
@@ -154,6 +162,9 @@ The Micro services should adhere to the following technical requirements:
 
 - The CI pipeline should kick off. Once complete, you will be able to test the deployed service by going to the service route (accessible from openshift Console, or by running `oc get route`).
 
+  !!! note
+      The pileline starts thanks a webhook via [GitHub Apps](https://pipelinesascode.com/docs/providers/github-app/) that's been configured with [`tkn pac bootstrap`](https://pipelinesascode.com/docs/cli/bootstrap/).
+
 ### Deploy backend for frontend (BFF)
 
 - Create a new repository from the [BFF Solution](https://github.com/cloud-design-patterns-journey/inv-bff-solution/generate) template.
@@ -164,7 +175,7 @@ The Micro services should adhere to the following technical requirements:
 - Deploy this application with Tekton:
 
     !!! note
-        You should have the [`tkn`](https://github.com/tektoncd/cli?tab=readme-ov-file#installing-tkn), [`tkn pac`](https://pipelinesascode.com/docs/guide/cli/#install) and `oc` CLIs installed. `oc` can be installed through the help section of your OpenShift console.
+        You should have the [`tkn`](https://github.com/tektoncd/cli?tab=readme-ov-file#installing-tkn), [`tkn pac`](https://pipelinesascode.com/docs/cli/installation) and `oc` CLIs installed. `oc` can be installed through the help section of your OpenShift console.
     
 - In the OpenShift web console, click on the user ID on the top right, click on **Copy login command** and get the OpenShift login command, which includes a token.
 
@@ -198,7 +209,7 @@ The Micro services should adhere to the following technical requirements:
     ```
 
 !!! note
-    - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/install/overview/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
+    - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/installation/kubernetes/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
     - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${UNIQUE_SUFFIX}-dev` project/namespace.
 
 - In OpenShift console (**Pipelines Section > Pipelines > Repositories**), edit the newly created `Repository` YAML to add cluster specific configuration (e.g. image repository):
@@ -255,7 +266,7 @@ The Micro services should adhere to the following technical requirements:
 - Deploy this application with Tekton:
 
     !!! note
-        You should have the [`tkn`](https://github.com/tektoncd/cli?tab=readme-ov-file#installing-tkn), [`tkn pac`](https://pipelinesascode.com/docs/guide/cli/#install) and `oc` CLIs installed. `oc` can be installed through the help section of your OpenShift console.
+        You should have the [`tkn`](https://github.com/tektoncd/cli?tab=readme-ov-file#installing-tkn), [`tkn pac`](https://pipelinesascode.com/docs/cli/installation) and `oc` CLIs installed. `oc` can be installed through the help section of your OpenShift console.
     
 - In the OpenShift web console, click on the user ID on the top right, click on **Copy login command** and get the OpenShift login command, which includes a token.
 
@@ -289,7 +300,7 @@ The Micro services should adhere to the following technical requirements:
     ```
 
 !!! note
-    - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/install/overview/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
+    - `tkn pac create repository` assumes you have [Pipelines-as-Code](https://pipelinesascode.com/docs/installation/kubernetes/) already setup on your cluster and Git provider. If you are running this lab as part of a workshop, this has been configured for you, make sure you use the provided GitHub organization when you create yout Git repository from template above.
     - `oc adm policy add-scc-to-user privileged -z pipeline` will make sure that the Tekton pipeline will be able to escalade privileges in your `inventory-${UNIQUE_SUFFIX}-dev` project/namespace.
 
 - In OpenShift console (**Pipelines Section > Pipelines > Repositories**), edit the newly created `Repository` YAML to add cluster specific configuration (e.g. image repository):
